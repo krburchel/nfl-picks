@@ -183,6 +183,30 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
     </div>
   </div>
 
+  <!-- Join Request Screen -->
+  <div id="join-screen" class="login-screen" style="display:none;">
+    <div class="login-box">
+      <h2>🏈 Join League</h2>
+      <p>Request to join this NFL Picks league. The admin will review and approve your request.</p>
+      <div class="form-row" style="justify-content:center; margin-top:12px;">
+        <input type="text" id="join-name-input" placeholder="Your name" style="padding:10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:1rem; width:100%;">
+      </div>
+      <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="submitJoinRequest()">Request to Join</button>
+    </div>
+  </div>
+
+  <!-- Waiting for Approval Screen -->
+  <div id="waiting-screen" class="login-screen" style="display:none;">
+    <div class="login-box">
+      <h2 id="waiting-title">⏳ Pending Approval</h2>
+      <p id="waiting-message">Your request has been sent to the admin. Check back soon!</p>
+      <div class="form-row" style="justify-content:center; margin-top:16px; gap:8px;">
+        <button class="btn btn-primary" onclick="checkMyRequestStatus()">Check Status</button>
+        <button class="btn btn-outline" onclick="cancelJoinRequest()">Cancel Request</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main App -->
   <div id="main-app" style="display:none;">
     <div class="header">
@@ -251,6 +275,14 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 
     <!-- ADMIN TAB -->
     <div class="tab-content" id="tab-admin">
+      <!-- Invite Link -->
+      <div class="admin-section" style="border-color:var(--blue);">
+        <h3 style="color:var(--blue);">🔗 League Invites</h3>
+        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px;">Share this link with friends. They'll submit a join request that you can approve below.</p>
+        <div id="invite-link-display"></div>
+        <div id="pending-requests-list" style="margin-top:16px;"></div>
+      </div>
+
       <!-- Manage Players -->
       <div class="admin-section">
         <h3>Players</h3>
@@ -382,12 +414,12 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 <script>
 // ── Firebase Config ──
 const firebaseConfig = {
-  apiKey: "AIzaSyB4UI2gUpyurW4C8LbMVTJg_HuqMjJk6MM",
-  authDomain: "nfl-picks-4cc53.firebaseapp.com",
-  projectId: "nfl-picks-4cc53",
-  storageBucket: "nfl-picks-4cc53.firebasestorage.app",
-  messagingSenderId: "764171986002",
-  appId: "1:764171986002:web:23d9da81e040a7aa31ab8b"
+  apiKey: "AIzaSyDummyKeyReplace",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:0000000000000000"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -447,13 +479,167 @@ const COL = {
   games: 'nfl-picks-games',
   players: 'nfl-picks-players',
   preseason: 'nfl-picks-preseason',
-  weekly: 'nfl-picks-weekly'
+  weekly: 'nfl-picks-weekly',
+  joinRequests: 'nfl-picks-join-requests'
 };
+
+// localStorage keys
+const LS_REQUEST_ID = 'nfl-picks-request-id';
+
+// ── Kickoff Time Helpers (auto-lock) ──
+// Game dates/times from ESPN are stored in Eastern Time. These helpers
+// convert them to UTC ms for "has kickoff happened yet?" checks.
+function getKickoffMs(game) {
+  if (!game.date || !game.time) return null;
+  const [y, mo, d] = game.date.split('-').map(Number);
+  const [h, mi] = game.time.split(':').map(Number);
+  if ([y,mo,d,h,mi].some(v => isNaN(v))) return null;
+  // Try EDT (-4) and EST (-5); pick the one that round-trips back to the given ET time.
+  for (const offsetHours of [4, 5]) {
+    const utcMs = Date.UTC(y, mo - 1, d, h + offsetHours, mi);
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(new Date(utcMs));
+      const etH = parseInt(parts.find(p => p.type === 'hour').value);
+      const etM = parseInt(parts.find(p => p.type === 'minute').value);
+      if (etH === h && etM === mi) return utcMs;
+    } catch (e) {}
+  }
+  return null;
+}
+
+function isKickoffPassed(game) {
+  const k = getKickoffMs(game);
+  return k !== null && Date.now() >= k;
+}
+
+// Earliest kickoff across all known games — used as preseason lock trigger.
+function getEarliestKickoff() {
+  let min = Infinity;
+  for (const g of allGames) {
+    const k = getKickoffMs(g);
+    if (k !== null && k < min) min = k;
+  }
+  return min === Infinity ? null : min;
+}
+
+function isPreseasonAutoLocked() {
+  const ek = getEarliestKickoff();
+  return ek !== null && Date.now() >= ek;
+}
+
+function isPreseasonLockedNow() {
+  return config.preseasonLocked || isPreseasonAutoLocked();
+}
+
+function isWeeklyGameLockedNow(game) {
+  // Master toggle locks all games in the current week
+  const isCurrentWeek = game.week === config.currentWeek;
+  if (config.weeklyLocked && isCurrentWeek) return true;
+  // Per-game kickoff time
+  return isKickoffPassed(game);
+}
+
+function formatKickoff(ms) {
+  if (!ms) return '';
+  return new Date(ms).toLocaleString(undefined, {
+    weekday:'short', month:'short', day:'numeric',
+    hour:'numeric', minute:'2-digit'
+  });
+}
+
+// Auto-refresh interval so lock states update as kickoffs pass
+let _lockRefreshInterval = null;
+function startLockRefresh() {
+  if (_lockRefreshInterval) return;
+  _lockRefreshInterval = setInterval(() => {
+    const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+    if (activeTab === 'preseason') renderPreseason();
+    if (activeTab === 'weekly') renderWeekly();
+  }, 30000);
+}
+function stopLockRefresh() {
+  if (_lockRefreshInterval) { clearInterval(_lockRefreshInterval); _lockRefreshInterval = null; }
+}
 
 // ── Init ──
 async function init() {
+  await loadConfig();
   await loadPlayers();
+
+  // Check if user has a pending request stored in localStorage
+  const storedRequestId = localStorage.getItem(LS_REQUEST_ID);
+  if (storedRequestId) {
+    const status = await handleStoredRequest(storedRequestId);
+    if (status === 'handled') return; // Screen is set, don't fall through
+  }
+
+  // Check URL for invite code
+  const params = new URLSearchParams(window.location.search);
+  const inviteCode = params.get('join');
+  if (inviteCode) {
+    if (config.inviteCode && inviteCode === config.inviteCode) {
+      showScreen('join-screen');
+      return;
+    } else {
+      toast('Invalid or expired invite link');
+      // Fall through to regular login
+    }
+  }
+
+  showScreen('login-screen');
   renderLogin();
+}
+
+// Show only one screen at a time
+function showScreen(id) {
+  ['login-screen','join-screen','waiting-screen','main-app'].forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.style.display = (s === id) ? (s === 'main-app' ? 'block' : 'flex') : 'none';
+  });
+}
+
+// Handle returning user with a stored request
+async function handleStoredRequest(requestId) {
+  try {
+    const doc = await db.collection(COL.joinRequests).doc(requestId).get();
+    if (!doc.exists) {
+      localStorage.removeItem(LS_REQUEST_ID);
+      return null;
+    }
+    const data = doc.data();
+
+    if (data.status === 'approved' && data.playerId) {
+      // Auto-login as the approved player
+      const player = allPlayers.find(p => p.id === data.playerId);
+      if (player) {
+        localStorage.removeItem(LS_REQUEST_ID);
+        loginAs(player.id);
+        return 'handled';
+      }
+      // Player might have been deleted — clear and fall through
+      localStorage.removeItem(LS_REQUEST_ID);
+      return null;
+    }
+
+    if (data.status === 'rejected') {
+      document.getElementById('waiting-title').innerHTML = '❌ Request Denied';
+      document.getElementById('waiting-message').textContent = `Sorry ${data.name}, the admin didn't approve your join request.`;
+      showScreen('waiting-screen');
+      return 'handled';
+    }
+
+    // Still pending
+    document.getElementById('waiting-title').innerHTML = '⏳ Pending Approval';
+    document.getElementById('waiting-message').textContent = `Hi ${data.name}! Your request is waiting for admin approval. Check back soon.`;
+    showScreen('waiting-screen');
+    return 'handled';
+  } catch (e) {
+    console.error('Error checking request:', e);
+    return null;
+  }
 }
 
 // ── Auth / Login ──
@@ -494,19 +680,64 @@ async function loginAs(playerId) {
   if(!player) return;
   currentUser = player;
   isAdmin = player.isAdmin || false;
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('main-app').style.display='block';
+  showScreen('main-app');
   document.getElementById('user-badge').textContent = player.name + (isAdmin?' ⭐':'');
   if(isAdmin) document.getElementById('admin-tab').style.display='block';
+  else document.getElementById('admin-tab').style.display='none';
   await loadAppData();
 }
 
 function logout() {
   currentUser = null;
   isAdmin = false;
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
+  stopLockRefresh();
   document.getElementById('admin-tab').style.display='none';
+  showScreen('login-screen');
+  renderLogin();
+}
+
+// ── Join Request Flow ──
+async function submitJoinRequest() {
+  const name = document.getElementById('join-name-input').value.trim();
+  if (!name) return toast('Please enter your name');
+
+  // Check for duplicate name
+  if (allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    return toast('That name is already taken');
+  }
+
+  try {
+    const ref = await db.collection(COL.joinRequests).add({
+      name,
+      status: 'pending',
+      requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    localStorage.setItem(LS_REQUEST_ID, ref.id);
+    document.getElementById('waiting-title').innerHTML = '⏳ Pending Approval';
+    document.getElementById('waiting-message').textContent = `Hi ${name}! Your request has been sent. The admin will review it soon.`;
+    showScreen('waiting-screen');
+  } catch (e) {
+    console.error(e);
+    toast('Failed to submit request: ' + e.message);
+  }
+}
+
+async function checkMyRequestStatus() {
+  const requestId = localStorage.getItem(LS_REQUEST_ID);
+  if (!requestId) { showScreen('login-screen'); renderLogin(); return; }
+  await loadPlayers(); // reload in case they were just approved
+  await handleStoredRequest(requestId);
+}
+
+async function cancelJoinRequest() {
+  if (!confirm('Cancel your join request?')) return;
+  const requestId = localStorage.getItem(LS_REQUEST_ID);
+  if (requestId) {
+    try { await db.collection(COL.joinRequests).doc(requestId).delete(); } catch(e) {}
+  }
+  localStorage.removeItem(LS_REQUEST_ID);
+  showScreen('login-screen');
+  renderLogin();
 }
 
 // ── Load Data ──
@@ -515,6 +746,7 @@ async function loadAppData() {
   selectedWeeklyWeek = config.currentWeek || 1;
   populateAdminDropdowns();
   renderAll();
+  startLockRefresh();
 }
 
 async function loadConfig() {
@@ -575,10 +807,17 @@ function renderPreseason() {
   if(weeks.length===0 && !selectedPreseasonWeek) selectedPreseasonWeek = 1;
   if(weeks.length>0 && !weeks.includes(selectedPreseasonWeek)) selectedPreseasonWeek = weeks[0];
 
+  // Lock state (master OR first-kickoff-passed)
+  const preseasonLocked = isPreseasonLockedNow();
+  const earliestMs = getEarliestKickoff();
+
   // Banner
   const banner = document.getElementById('preseason-banner');
-  if(config.preseasonLocked) {
-    banner.innerHTML = `<div class="lock-banner">🔒 Preseason picks are locked</div>`;
+  if (preseasonLocked) {
+    const reason = config.preseasonLocked ? 'locked by admin' : `first game kicked off ${formatKickoff(earliestMs)}`;
+    banner.innerHTML = `<div class="lock-banner">🔒 Preseason picks are locked (${reason})</div>`;
+  } else if (earliestMs) {
+    banner.innerHTML = `<div class="open-banner">✏️ Preseason picks open — lock in by ${formatKickoff(earliestMs)}</div>`;
   } else {
     banner.innerHTML = `<div class="open-banner">✏️ Preseason picks are open — pick your winners!</div>`;
   }
@@ -610,7 +849,7 @@ function renderPreseason() {
   renderPreseasonGames();
 
   // Save button
-  document.getElementById('save-preseason-btn').disabled = config.preseasonLocked;
+  document.getElementById('save-preseason-btn').disabled = preseasonLocked;
 }
 
 function selectPreseasonWeek(w) {
@@ -628,12 +867,13 @@ function renderPreseasonGames() {
     const hasResult = !!g.winner;
     const isCorrect = hasResult && myPick === g.winner;
     const isWrong = hasResult && myPick && myPick !== g.winner;
-    const locked = config.preseasonLocked;
+    const locked = isPreseasonLockedNow();
     const cardClass = hasResult ? (isCorrect?'correct':isWrong?'incorrect':'') : (myPick?'picked':'');
+    const lockIcon = (locked && !hasResult) ? ' 🔒' : '';
 
     return `<div class="game-card ${cardClass}">
       <div class="game-meta">
-        <span>${g.date||''} ${g.time||''}</span>
+        <span>${g.date||''} ${g.time||''}${lockIcon}</span>
         <span>${hasResult?'Final':'Week '+g.week}</span>
       </div>
       <div class="game-teams">
@@ -669,11 +909,16 @@ function renderTeamPick(game, teamAbbr, side, myPick, locked, mode) {
 }
 
 function makePick(mode, gameId, team) {
+  const game = allGames.find(g => g.id === gameId);
+  if (!game) return;
+
   if(mode === 'preseason') {
+    if (isPreseasonLockedNow()) { toast('Preseason picks are locked'); return; }
     if(preseasonPicks[gameId] === team) delete preseasonPicks[gameId];
     else preseasonPicks[gameId] = team;
     renderPreseason();
   } else {
+    if (isWeeklyGameLockedNow(game)) { toast('This game is locked — kickoff has passed'); return; }
     const week = selectedWeeklyWeek;
     if(!weeklyPicks[week]) weeklyPicks[week] = {};
     if(weeklyPicks[week][gameId] === team) delete weeklyPicks[week][gameId];
@@ -683,7 +928,7 @@ function makePick(mode, gameId, team) {
 }
 
 async function savePreseasonPicks() {
-  if(config.preseasonLocked) return toast('Preseason picks are locked!');
+  if (isPreseasonLockedNow()) return toast('Preseason picks are locked!');
   await db.collection(COL.preseason).doc(currentUser.id).set({
     playerId: currentUser.id,
     playerName: currentUser.name,
@@ -700,8 +945,22 @@ function renderWeekly() {
 
   const banner = document.getElementById('weekly-banner');
   const isCurrentWeek = selectedWeeklyWeek === config.currentWeek;
+  const weekGamesForBanner = allGames.filter(g=>g.week===selectedWeeklyWeek);
+  const weekLockedCount = weekGamesForBanner.filter(g => isWeeklyGameLockedNow(g)).length;
+  const weekAllLocked = weekGamesForBanner.length > 0 && weekLockedCount === weekGamesForBanner.length;
+  const nextGameMs = weekGamesForBanner
+    .map(g => getKickoffMs(g))
+    .filter(ms => ms !== null && ms > Date.now())
+    .sort((a,b) => a-b)[0];
+
   if(config.weeklyLocked && isCurrentWeek) {
-    banner.innerHTML = `<div class="lock-banner">🔒 Weekly picks are locked for Week ${selectedWeeklyWeek}</div>`;
+    banner.innerHTML = `<div class="lock-banner">🔒 Week ${selectedWeeklyWeek} picks locked by admin</div>`;
+  } else if (weekAllLocked) {
+    banner.innerHTML = `<div class="lock-banner">🔒 All Week ${selectedWeeklyWeek} games have started</div>`;
+  } else if (weekLockedCount > 0) {
+    banner.innerHTML = `<div class="lock-banner">🔒 ${weekLockedCount} of ${weekGamesForBanner.length} Week ${selectedWeeklyWeek} games locked${nextGameMs?` · next kickoff ${formatKickoff(nextGameMs)}`:''}</div>`;
+  } else if (nextGameMs) {
+    banner.innerHTML = `<div class="open-banner">✏️ Pick Week ${selectedWeeklyWeek} — first kickoff ${formatKickoff(nextGameMs)}</div>`;
   } else {
     banner.innerHTML = `<div class="open-banner">✏️ Pick your winners for Week ${selectedWeeklyWeek}</div>`;
   }
@@ -746,8 +1005,9 @@ function renderWeekly() {
 
   renderWeeklyGames();
 
-  const canSave = !(config.weeklyLocked && isCurrentWeek);
-  document.getElementById('save-weekly-btn').disabled = !canSave;
+  // Enable save if at least one game in this week is still open
+  const anyUnlocked = weekGames.some(g => !isWeeklyGameLockedNow(g));
+  document.getElementById('save-weekly-btn').disabled = !anyUnlocked;
 }
 
 function selectWeeklyWeek(w) {
@@ -759,8 +1019,6 @@ function renderWeeklyGames() {
   const games = allGames.filter(g=>g.week===selectedWeeklyWeek);
   const el = document.getElementById('weekly-games');
   const myPicks = weeklyPicks[selectedWeeklyWeek] || {};
-  const isCurrentWeek = selectedWeeklyWeek === config.currentWeek;
-  const locked = config.weeklyLocked && isCurrentWeek;
 
   if(games.length===0) { el.innerHTML = `<p style="color:var(--text-dim);text-align:center;padding:40px;">No games for Week ${selectedWeeklyWeek}</p>`; return; }
 
@@ -769,12 +1027,14 @@ function renderWeeklyGames() {
     const hasResult = !!g.winner;
     const isCorrect = hasResult && myPick === g.winner;
     const isWrong = hasResult && myPick && myPick !== g.winner;
-    const isLocked = locked || hasResult;
+    const timeLocked = isWeeklyGameLockedNow(g);
+    const isLocked = timeLocked || hasResult;
     const cardClass = hasResult ? (isCorrect?'correct':isWrong?'incorrect':'') : (myPick?'picked':'');
+    const lockIcon = (timeLocked && !hasResult) ? ' 🔒' : '';
 
     return `<div class="game-card ${cardClass}">
       <div class="game-meta">
-        <span>${g.date||''} ${g.time||''}</span>
+        <span>${g.date||''} ${g.time||''}${lockIcon}</span>
         <span>${hasResult?'Final':'Week '+g.week}</span>
       </div>
       <div class="game-teams">
@@ -788,16 +1048,33 @@ function renderWeeklyGames() {
 
 async function saveWeeklyPicks() {
   const week = selectedWeeklyWeek;
-  const picks = weeklyPicks[week] || {};
   const docId = `${currentUser.id}_week${week}`;
+  const weekGames = allGames.filter(g => g.week === week);
+
+  // Merge safely: for any locked game, preserve the server's value rather than
+  // overwriting with local (which the UI should've prevented editing, but this is defense).
+  const serverDoc = await db.collection(COL.weekly).doc(docId).get();
+  const serverPicks = serverDoc.exists ? (serverDoc.data().picks || {}) : {};
+  const localPicks = weeklyPicks[week] || {};
+
+  const finalPicks = {};
+  for (const g of weekGames) {
+    const locked = isWeeklyGameLockedNow(g);
+    const pickToUse = locked ? serverPicks[g.id] : localPicks[g.id];
+    if (pickToUse) finalPicks[g.id] = pickToUse;
+  }
+
   await db.collection(COL.weekly).doc(docId).set({
     playerId: currentUser.id,
     playerName: currentUser.name,
     week: week,
-    picks: picks,
+    picks: finalPicks,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
+
+  weeklyPicks[week] = finalPicks;
   toast(`Week ${week} picks saved!`);
+  renderWeekly();
 }
 
 // ── Standings ──
@@ -880,6 +1157,7 @@ function populateAdminDropdowns() {
 }
 
 function renderAdmin() {
+  renderAdminInvite();
   // Player list
   const el = document.getElementById('admin-player-list');
   el.innerHTML = allPlayers.map(p =>
@@ -889,6 +1167,129 @@ function renderAdmin() {
       <button class="btn btn-danger btn-small" onclick="removePlayer('${p.id}')">Remove</button>
     </div>`
   ).join('');
+}
+
+// Render invite section in admin tab
+async function renderAdminInvite() {
+  const display = document.getElementById('invite-link-display');
+  if (!display) return;
+
+  const hasCode = !!config.inviteCode;
+  const baseUrl = window.location.origin + window.location.pathname;
+  const fullLink = hasCode ? `${baseUrl}?join=${config.inviteCode}` : '';
+
+  display.innerHTML = hasCode ? `
+    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px; margin-bottom:10px;">
+      <div style="font-size:0.7rem; color:var(--text-dim); font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Share this link</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" readonly value="${fullLink}" id="invite-link-input" style="flex:1; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:0.8rem; font-family:monospace;">
+        <button class="btn btn-primary btn-small" onclick="copyInviteLink()">Copy</button>
+      </div>
+      <div style="margin-top:6px; font-size:0.75rem; color:var(--text-dim);">Code: <strong style="color:var(--blue); font-family:'Oswald',sans-serif; letter-spacing:2px;">${config.inviteCode}</strong></div>
+    </div>
+    <button class="btn btn-outline btn-small" onclick="regenerateInviteCode()">Regenerate Code (invalidates old link)</button>
+  ` : `
+    <button class="btn btn-primary btn-small" onclick="regenerateInviteCode()">Generate Invite Link</button>
+  `;
+
+  // Load & render pending requests
+  const pendingEl = document.getElementById('pending-requests-list');
+  if (!pendingEl) return;
+
+  try {
+    const snap = await db.collection(COL.joinRequests).where('status','==','pending').get();
+    const requests = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+    if (requests.length === 0) {
+      pendingEl.innerHTML = `<div style="font-size:0.8rem; color:var(--text-dim); padding:8px 0;">No pending join requests</div>`;
+      return;
+    }
+
+    pendingEl.innerHTML = `
+      <div style="font-size:0.7rem; color:var(--text-dim); font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Pending Requests (${requests.length})</div>
+      ${requests.map(r => `
+        <div style="display:flex; align-items:center; gap:8px; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; margin-bottom:6px;">
+          <span style="flex:1; font-weight:500;">${r.name}</span>
+          <button class="btn btn-primary btn-small" onclick="approveRequest('${r.id}')">Approve</button>
+          <button class="btn btn-danger btn-small" onclick="rejectRequest('${r.id}')">Reject</button>
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {
+    console.error(e);
+    pendingEl.innerHTML = `<div style="font-size:0.8rem; color:var(--red);">Error loading requests</div>`;
+  }
+}
+
+// Generate/regenerate invite code
+async function regenerateInviteCode() {
+  if (config.inviteCode && !confirm('Regenerating will invalidate the existing link. Continue?')) return;
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  await db.collection(COL.config).doc('settings').set({ ...config, inviteCode: code }, { merge: true });
+  config.inviteCode = code;
+  renderAdminInvite();
+  toast('Invite link ready!');
+}
+
+function copyInviteLink() {
+  const input = document.getElementById('invite-link-input');
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(
+    () => toast('Link copied!'),
+    () => { document.execCommand('copy'); toast('Link copied!'); }
+  );
+}
+
+// Approve a join request — creates a player and marks request as approved
+async function approveRequest(requestId) {
+  try {
+    const reqDoc = await db.collection(COL.joinRequests).doc(requestId).get();
+    if (!reqDoc.exists) return toast('Request not found');
+    const reqData = reqDoc.data();
+
+    // Check for name collision
+    await loadPlayers();
+    if (allPlayers.some(p => p.name.toLowerCase() === reqData.name.toLowerCase())) {
+      return toast(`A player named "${reqData.name}" already exists`);
+    }
+
+    // Create the player
+    const playerRef = await db.collection(COL.players).add({
+      name: reqData.name,
+      isAdmin: false
+    });
+
+    // Mark request approved (keep doc so user can auto-login on next visit)
+    await db.collection(COL.joinRequests).doc(requestId).update({
+      status: 'approved',
+      playerId: playerRef.id,
+      processedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await loadPlayers();
+    renderAdmin();
+    toast(`${reqData.name} approved!`);
+  } catch (e) {
+    console.error(e);
+    toast('Error: ' + e.message);
+  }
+}
+
+async function rejectRequest(requestId) {
+  if (!confirm('Reject this join request?')) return;
+  try {
+    await db.collection(COL.joinRequests).doc(requestId).update({
+      status: 'rejected',
+      processedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    renderAdmin();
+    toast('Request rejected');
+  } catch (e) {
+    console.error(e);
+    toast('Error: ' + e.message);
+  }
 }
 
 async function addPlayer() {
