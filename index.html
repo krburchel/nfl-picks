@@ -148,6 +148,24 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 .lock-banner { background:rgba(255,71,87,0.1); border:1px solid var(--red); border-radius:8px; padding:10px 16px; margin-bottom:16px; display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--red); }
 .open-banner { background:rgba(0,212,170,0.1); border:1px solid var(--accent); border-radius:8px; padding:10px 16px; margin-bottom:16px; display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--accent); }
 
+/* Tiebreaker UI */
+.tiebreaker-card { background:linear-gradient(135deg, rgba(255,195,18,0.08), rgba(0,212,170,0.05)); border:1px solid var(--gold); border-radius:var(--radius); padding:12px 14px; margin-bottom:10px; }
+.tiebreaker-label { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:0.85rem; color:var(--gold); font-weight:700; margin-bottom:4px; }
+.tiebreaker-desc { font-size:0.8rem; color:var(--text-dim); margin-bottom:8px; line-height:1.4; }
+.tiebreaker-input-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.tiebreaker-input-row input { padding:8px 12px; background:var(--surface2); border:1px solid var(--gold); border-radius:6px; color:var(--text); font-size:1rem; font-family:'Oswald',sans-serif; width:120px; }
+.tiebreaker-input-row input:focus { outline:none; border-color:var(--accent); }
+.tiebreaker-actual { font-size:0.85rem; color:var(--accent); }
+.tiebreaker-locked { font-size:0.8rem; color:var(--text-dim); }
+.tb-badge { font-size:0.65rem; color:var(--gold); font-family:'Oswald',sans-serif; letter-spacing:1px; margin-left:4px; }
+
+/* Standings: tiebreaker info card */
+.tiebreaker-info-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; margin-bottom:16px; }
+.tiebreaker-info-title { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:0.85rem; color:var(--gold); margin-bottom:6px; }
+.tiebreaker-info-card ol { margin-left:20px; font-size:0.82rem; color:var(--text-dim); line-height:1.6; }
+.tiebreaker-info-card ol li::marker { color:var(--accent); font-weight:700; }
+.decided-by { font-size:0.65rem; color:var(--text-dim); font-style:italic; margin-top:2px; }
+
 /* Scroll */
 ::-webkit-scrollbar { width:6px; }
 ::-webkit-scrollbar-track { background:var(--bg); }
@@ -257,15 +275,19 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
     <!-- STANDINGS TAB -->
     <div class="tab-content" id="tab-standings">
       <div class="stats-bar" id="standings-stats"></div>
+      <div id="tiebreaker-info"></div>
       <div style="overflow-x:auto;">
         <table class="standings-table" id="standings-table">
           <thead>
             <tr>
               <th>#</th>
               <th>Player</th>
-              <th>Preseason</th>
-              <th>Weekly</th>
+              <th>Pre</th>
+              <th>Wk</th>
               <th>Total</th>
+              <th title="Weekly Wins">W</th>
+              <th title="Best single week">Best</th>
+              <th title="Tiebreaker guess (MNF total points)">TB</th>
             </tr>
           </thead>
           <tbody id="standings-body"></tbody>
@@ -470,6 +492,7 @@ let allGames = [];
 let allPlayers = [];
 let preseasonPicks = {};
 let weeklyPicks = {};
+let weeklyTiebreakerGuesses = {}; // { week: number } — my guesses by week
 let selectedPreseasonWeek = 1;
 let selectedWeeklyWeek = 1;
 
@@ -548,6 +571,22 @@ function formatKickoff(ms) {
     weekday:'short', month:'short', day:'numeric',
     hour:'numeric', minute:'2-digit'
   });
+}
+
+// ── Tiebreaker Game (last Monday Night game of the regular season) ──
+// Used as final tiebreaker — players predict total combined points scored.
+function getTiebreakerGame() {
+  const mondayGames = allGames
+    .map(g => ({ game: g, ms: getKickoffMs(g) }))
+    .filter(x => x.ms !== null)
+    .filter(x => {
+      const day = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York', weekday: 'short'
+      }).format(new Date(x.ms));
+      return day === 'Mon';
+    })
+    .sort((a, b) => b.ms - a.ms);
+  return mondayGames[0]?.game || null;
 }
 
 // Auto-refresh interval so lock states update as kickoffs pass
@@ -768,10 +807,14 @@ async function loadMyPreseasonPicks() {
 async function loadMyWeeklyPicks() {
   if(!currentUser) return;
   weeklyPicks = {};
+  weeklyTiebreakerGuesses = {};
   const snap = await db.collection(COL.weekly).where('playerId','==',currentUser.id).get();
   snap.forEach(d => {
     const data = d.data();
     weeklyPicks[data.week] = data.picks || {};
+    if (data.tiebreakerGuess !== undefined && data.tiebreakerGuess !== null) {
+      weeklyTiebreakerGuesses[data.week] = data.tiebreakerGuess;
+    }
   });
 }
 
@@ -1022,7 +1065,26 @@ function renderWeeklyGames() {
 
   if(games.length===0) { el.innerHTML = `<p style="color:var(--text-dim);text-align:center;padding:40px;">No games for Week ${selectedWeeklyWeek}</p>`; return; }
 
-  el.innerHTML = games.map(g => {
+  // Tiebreaker game UI — render if this week contains the tiebreaker game
+  const tbGame = getTiebreakerGame();
+  let tiebreakerHtml = '';
+  if (tbGame && tbGame.week === selectedWeeklyWeek) {
+    const tbLocked = isWeeklyGameLockedNow(tbGame);
+    const myGuess = weeklyTiebreakerGuesses[selectedWeeklyWeek];
+    const actual = (tbGame.totalPoints !== undefined && tbGame.totalPoints !== null) ? tbGame.totalPoints : null;
+    const guessDisplay = (myGuess !== undefined && myGuess !== null) ? myGuess : '';
+    tiebreakerHtml = `
+      <div class="tiebreaker-card">
+        <div class="tiebreaker-label">🎯 Season Tiebreaker</div>
+        <div class="tiebreaker-desc">Predict the <strong>total combined points</strong> in ${tbGame.away} @ ${tbGame.home}. Closest without going over wins season ties.</div>
+        <div class="tiebreaker-input-row">
+          <input type="number" id="tiebreaker-input" min="0" max="200" value="${guessDisplay}" placeholder="e.g. 47" ${tbLocked?'disabled':''}>
+          ${actual !== null ? `<span class="tiebreaker-actual">Actual: <strong>${actual}</strong></span>` : (tbLocked ? '<span class="tiebreaker-locked">🔒 Locked</span>' : '')}
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = tiebreakerHtml + games.map(g => {
     const myPick = myPicks[g.id];
     const hasResult = !!g.winner;
     const isCorrect = hasResult && myPick === g.winner;
@@ -1031,10 +1093,11 @@ function renderWeeklyGames() {
     const isLocked = timeLocked || hasResult;
     const cardClass = hasResult ? (isCorrect?'correct':isWrong?'incorrect':'') : (myPick?'picked':'');
     const lockIcon = (timeLocked && !hasResult) ? ' 🔒' : '';
+    const tbBadge = (tbGame && tbGame.id === g.id) ? ' <span class="tb-badge">🎯 TIEBREAKER</span>' : '';
 
     return `<div class="game-card ${cardClass}">
       <div class="game-meta">
-        <span>${g.date||''} ${g.time||''}${lockIcon}</span>
+        <span>${g.date||''} ${g.time||''}${lockIcon}${tbBadge}</span>
         <span>${hasResult?'Final':'Week '+g.week}</span>
       </div>
       <div class="game-teams">
@@ -1054,7 +1117,8 @@ async function saveWeeklyPicks() {
   // Merge safely: for any locked game, preserve the server's value rather than
   // overwriting with local (which the UI should've prevented editing, but this is defense).
   const serverDoc = await db.collection(COL.weekly).doc(docId).get();
-  const serverPicks = serverDoc.exists ? (serverDoc.data().picks || {}) : {};
+  const serverData = serverDoc.exists ? serverDoc.data() : {};
+  const serverPicks = serverData.picks || {};
   const localPicks = weeklyPicks[week] || {};
 
   const finalPicks = {};
@@ -1064,15 +1128,38 @@ async function saveWeeklyPicks() {
     if (pickToUse) finalPicks[g.id] = pickToUse;
   }
 
-  await db.collection(COL.weekly).doc(docId).set({
+  // Tiebreaker guess: only save (or update) if the tiebreaker game in this week isn't locked yet
+  let tiebreakerGuess = serverData.tiebreakerGuess ?? null;
+  const tbGame = getTiebreakerGame();
+  if (tbGame && tbGame.week === week) {
+    const tbLocked = isWeeklyGameLockedNow(tbGame);
+    if (!tbLocked) {
+      const input = document.getElementById('tiebreaker-input');
+      if (input && input.value !== '') {
+        const guess = parseInt(input.value);
+        if (!isNaN(guess) && guess >= 0) tiebreakerGuess = guess;
+      } else if (input && input.value === '') {
+        tiebreakerGuess = null;
+      }
+    }
+  }
+
+  const payload = {
     playerId: currentUser.id,
     playerName: currentUser.name,
     week: week,
     picks: finalPicks,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  };
+  if (tiebreakerGuess !== null) payload.tiebreakerGuess = tiebreakerGuess;
+  else payload.tiebreakerGuess = firebase.firestore.FieldValue.delete();
+
+  await db.collection(COL.weekly).doc(docId).set(payload, { merge: true });
 
   weeklyPicks[week] = finalPicks;
+  if (tiebreakerGuess !== null) weeklyTiebreakerGuesses[week] = tiebreakerGuess;
+  else delete weeklyTiebreakerGuesses[week];
+
   toast(`Week ${week} picks saved!`);
   renderWeekly();
 }
@@ -1083,9 +1170,22 @@ async function renderStandings() {
   const preSnap = await db.collection(COL.preseason).get();
   const weekSnap = await db.collection(COL.weekly).get();
 
+  // Initialize per-player scores with tiebreaker fields
   const playerScores = {};
   allPlayers.forEach(p => {
-    playerScores[p.id] = { name:p.name, preseason:0, weekly:0, total:0 };
+    playerScores[p.id] = {
+      id: p.id,
+      name: p.name,
+      preseason: 0,
+      weekly: 0,
+      total: 0,
+      weeklyWins: 0,
+      bestWeek: 0,
+      weekScores: {},     // week -> correct count
+      tbGuess: null,      // tiebreaker guess
+      tbDiff: null,       // distance from actual (Infinity if went over or no guess)
+      decidedBy: ''       // which tier resolved the rank vs. player above
+    };
   });
 
   // Preseason scoring
@@ -1099,22 +1199,85 @@ async function renderStandings() {
     });
   });
 
-  // Weekly scoring
+  // Weekly scoring (per-week scores so we can compute weekly wins & best week)
   weekSnap.forEach(doc => {
     const data = doc.data();
     const pid = data.playerId;
     if(!playerScores[pid]) return;
     const picks = data.picks || {};
     const week = data.week;
+    let weekCorrect = 0;
     allGames.filter(g=>g.week===week).forEach(g => {
-      if(g.winner && picks[g.id] === g.winner) playerScores[pid].weekly++;
+      if(g.winner && picks[g.id] === g.winner) weekCorrect++;
+    });
+    playerScores[pid].weekly += weekCorrect;
+    playerScores[pid].weekScores[week] = (playerScores[pid].weekScores[week] || 0) + weekCorrect;
+    if (weekCorrect > playerScores[pid].bestWeek) playerScores[pid].bestWeek = weekCorrect;
+
+    // Capture tiebreaker guess (will be from whatever week the tiebreaker game is in)
+    if (data.tiebreakerGuess !== undefined && data.tiebreakerGuess !== null) {
+      // Take the most recent one if multiple — but really there's only one tiebreaker week
+      playerScores[pid].tbGuess = data.tiebreakerGuess;
+    }
+  });
+
+  // Compute weekly wins — for each week where games have been decided, find max score among players who picked
+  const weeksWithResults = [...new Set(allGames.filter(g => g.winner).map(g => g.week))];
+  weeksWithResults.forEach(week => {
+    const scoresThisWeek = {};
+    Object.entries(playerScores).forEach(([pid, s]) => {
+      if (s.weekScores[week] !== undefined) scoresThisWeek[pid] = s.weekScores[week];
+    });
+    const values = Object.values(scoresThisWeek);
+    if (values.length === 0) return;
+    const max = Math.max(...values);
+    if (max === 0) return; // skip weeks where everyone got 0
+    Object.entries(scoresThisWeek).forEach(([pid, score]) => {
+      if (score === max) playerScores[pid].weeklyWins++;
     });
   });
 
-  // Totals & sort
+  // Tiebreaker game data: compute distance from actual
+  const tbGame = getTiebreakerGame();
+  const tbActual = tbGame && tbGame.totalPoints !== undefined && tbGame.totalPoints !== null ? tbGame.totalPoints : null;
+  Object.values(playerScores).forEach(s => {
+    if (s.tbGuess === null) {
+      s.tbDiff = Infinity; // no guess = lose final tiebreaker
+    } else if (tbActual !== null) {
+      if (s.tbGuess > tbActual) s.tbDiff = Infinity; // went over = disqualified
+      else s.tbDiff = tbActual - s.tbGuess;
+    } else {
+      s.tbDiff = null; // game hasn't finished yet
+    }
+  });
+
+  // Totals
   const rows = Object.values(playerScores);
   rows.forEach(r => r.total = r.preseason + r.weekly);
-  rows.sort((a,b) => b.total - a.total);
+
+  // Sort by full tiebreaker cascade
+  rows.sort((a,b) => {
+    if (b.total !== a.total) return b.total - a.total;
+    if (b.weeklyWins !== a.weeklyWins) return b.weeklyWins - a.weeklyWins;
+    if (b.bestWeek !== a.bestWeek) return b.bestWeek - a.bestWeek;
+    // Tiebreaker diff: smaller is better; Infinity (no guess / over) loses
+    const aD = a.tbDiff === null ? Infinity : a.tbDiff;
+    const bD = b.tbDiff === null ? Infinity : b.tbDiff;
+    if (aD !== bD) return aD - bD;
+    return 0;
+  });
+
+  // Annotate which tier resolved each "vs above" tie
+  for (let i = 1; i < rows.length; i++) {
+    const above = rows[i-1];
+    const me = rows[i];
+    if (me.total === above.total) {
+      if (me.weeklyWins !== above.weeklyWins) me.decidedBy = 'Weekly wins';
+      else if (me.bestWeek !== above.bestWeek) me.decidedBy = 'Best week';
+      else if ((me.tbDiff ?? Infinity) !== (above.tbDiff ?? Infinity)) me.decidedBy = 'MNF total';
+      else me.decidedBy = 'Tied';
+    }
+  }
 
   const decidedGames = allGames.filter(g=>g.winner).length;
   document.getElementById('standings-stats').innerHTML = `
@@ -1123,16 +1286,74 @@ async function renderStandings() {
     <div class="stat-card"><div class="label">Players</div><div class="value">${allPlayers.length}</div></div>
   `;
 
+  // Tiebreaker rules info card
+  const tbInfo = document.getElementById('tiebreaker-info');
+  if (tbInfo) {
+    const tbGameLabel = tbGame
+      ? `${tbGame.away} @ ${tbGame.home} (${formatKickoff(getKickoffMs(tbGame))})`
+      : 'Last MNF game of regular season';
+    const tbActualLabel = tbActual !== null
+      ? ` <strong>Actual: ${tbActual} pts</strong>`
+      : '';
+    tbInfo.innerHTML = `
+      <div class="tiebreaker-info-card">
+        <div class="tiebreaker-info-title">🏆 Tiebreaker Rules</div>
+        <ol>
+          <li>Most total points (preseason + weekly)</li>
+          <li>Most weekly wins (weeks where player had top score, ties shared)</li>
+          <li>Best single-week score</li>
+          <li>Closest guess on ${tbGameLabel} without going over.${tbActualLabel}</li>
+        </ol>
+        <div style="font-size:0.72rem; color:var(--text-dim); margin-top:8px; font-style:italic;">
+          🔒 Tiebreaker guesses are private — you only see your own until the final result is entered.
+        </div>
+      </div>`;
+  }
+
+  // Render rows with new columns. TB guesses are private until either (a) admin
+  // is viewing, or (b) the actual total points have been entered (the reveal).
+  const myId = currentUser?.id;
+  const tbRevealed = tbActual !== null;
+  const canSeeAllGuesses = isAdmin || tbRevealed;
+
   const tbody = document.getElementById('standings-body');
-  tbody.innerHTML = rows.map((r,i) =>
-    `<tr>
+  tbody.innerHTML = rows.map((r,i) => {
+    const decidedTag = r.decidedBy ? `<div class="decided-by">via ${r.decidedBy}</div>` : '';
+    const isMyRow = r.id === myId;
+
+    // TB column display logic
+    let tbDisplay;
+    if (r.tbGuess === null) {
+      // No guess submitted — show — to those who can see, lock to others
+      tbDisplay = (canSeeAllGuesses || isMyRow)
+        ? '<span style="color:var(--text-dim);">—</span>'
+        : '<span style="color:var(--text-dim);" title="Hidden until reveal">🔒</span>';
+    } else if (canSeeAllGuesses) {
+      // Fully revealed: show guess with diff/over indicator if actual is known
+      tbDisplay = tbRevealed
+        ? (r.tbGuess > tbActual
+            ? `${r.tbGuess} <span style="color:var(--red);">(over)</span>`
+            : `${r.tbGuess} <span style="color:var(--text-dim);">(${tbActual - r.tbGuess} off)</span>`)
+        : `${r.tbGuess}`;
+    } else if (isMyRow) {
+      // Player sees their own guess
+      tbDisplay = `${r.tbGuess} <span style="color:var(--text-dim);" title="Only you can see this">👁</span>`;
+    } else {
+      // Other players' guesses are hidden
+      tbDisplay = '<span style="color:var(--text-dim);" title="Hidden until MNF result is entered">🔒</span>';
+    }
+
+    return `<tr>
       <td><span class="rank-num">${i+1}</span></td>
-      <td>${r.name}</td>
+      <td>${r.name}${decidedTag}</td>
       <td>${r.preseason}</td>
       <td>${r.weekly}</td>
       <td><span class="points-total">${r.total}</span></td>
-    </tr>`
-  ).join('');
+      <td>${r.weeklyWins}</td>
+      <td>${r.bestWeek}</td>
+      <td>${tbDisplay}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Admin ──
@@ -1370,20 +1591,25 @@ function loadResultsWeek() {
   const week = parseInt(document.getElementById('results-week').value);
   const games = allGames.filter(g=>g.week===week);
   const el = document.getElementById('results-list');
+  const tbGame = getTiebreakerGame();
 
   if(games.length === 0) { el.innerHTML = '<p style="color:var(--text-dim);font-size:0.85rem;">No games this week</p>'; return; }
 
   el.innerHTML = games.map(g => {
-    const awayTeam = teamMap[g.away] || { name:g.away };
-    const homeTeam = teamMap[g.home] || { name:g.home };
+    const isTb = tbGame && tbGame.id === g.id;
+    const tbInput = isTb
+      ? `<input type="number" id="totalpoints-${g.id}" min="0" max="200" value="${g.totalPoints ?? ''}" placeholder="Total pts" style="width:90px; padding:4px 8px; background:var(--surface2); border:1px solid var(--accent); color:var(--text); border-radius:4px; font-size:0.8rem;">`
+      : '';
+    const tbLabel = isTb ? '<span style="color:var(--accent); font-size:0.7rem; margin-left:6px;">🎯 TB</span>' : '';
     return `<div class="result-row">
-      <div class="teams"><span>${g.away}</span> @ <span>${g.home}</span></div>
+      <div class="teams"><span>${g.away}</span> @ <span>${g.home}</span>${tbLabel}</div>
       <select id="result-${g.id}">
         <option value="">No result</option>
         <option value="${g.away}" ${g.winner===g.away?'selected':''}>${g.away} wins</option>
         <option value="${g.home}" ${g.winner===g.home?'selected':''}>${g.home} wins</option>
         <option value="TIE" ${g.winner==='TIE'?'selected':''}>Tie</option>
       </select>
+      ${tbInput}
     </div>`;
   }).join('');
 }
@@ -1391,13 +1617,29 @@ function loadResultsWeek() {
 async function saveResults() {
   const week = parseInt(document.getElementById('results-week').value);
   const games = allGames.filter(g=>g.week===week);
+  const tbGame = getTiebreakerGame();
   const batch = db.batch();
 
   games.forEach(g => {
     const sel = document.getElementById(`result-${g.id}`);
     if(!sel) return;
     const winner = sel.value || null;
-    batch.update(db.collection(COL.games).doc(g.id), { winner });
+    const update = { winner };
+
+    // If this is the tiebreaker game, also save total points
+    if (tbGame && tbGame.id === g.id) {
+      const tpInput = document.getElementById(`totalpoints-${g.id}`);
+      if (tpInput) {
+        const val = tpInput.value;
+        if (val === '') {
+          update.totalPoints = firebase.firestore.FieldValue.delete();
+        } else {
+          const n = parseInt(val);
+          if (!isNaN(n) && n >= 0) update.totalPoints = n;
+        }
+      }
+    }
+    batch.update(db.collection(COL.games).doc(g.id), update);
   });
 
   await batch.commit();
