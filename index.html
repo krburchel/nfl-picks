@@ -48,6 +48,9 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 .login-box h2 { font-size:2rem; margin-bottom:6px; background:linear-gradient(90deg,var(--accent),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 .login-box p { color:var(--text-dim); margin-bottom:24px; font-size:0.9rem; }
 .player-list { display:flex; flex-direction:column; gap:8px; }
+.btn-google { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:12px 18px; background:#fff; color:#1f1f1f; border:none; border-radius:8px; font-family:'Source Sans 3',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer; transition:all 0.15s; box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+.btn-google:hover { background:#f7f7f7; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.4); }
+.btn-google:active { transform:translateY(0); }
 .player-btn { padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:1rem; cursor:pointer; transition:all 0.2s; font-family:'Source Sans 3',sans-serif; }
 .player-btn:hover { border-color:var(--accent); background:var(--accent-glow); }
 .player-btn.admin { border-color:var(--gold); color:var(--gold); }
@@ -88,6 +91,7 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 .team-pick.loser { opacity:0.5; }
 .team-pick.locked { cursor:default; }
 .game-vs { display:flex; align-items:center; padding:0 4px; color:var(--text-dim); font-size:0.7rem; font-family:'Oswald',sans-serif; }
+.team-logo { width:34px; height:34px; object-fit:contain; flex-shrink:0; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
 .team-abbr { font-family:'Oswald',sans-serif; font-weight:700; font-size:1.1rem; min-width:40px; }
 .team-name { font-size:0.85rem; color:var(--text-dim); }
 .team-record { font-size:0.7rem; color:var(--text-dim); margin-left:auto; }
@@ -128,6 +132,33 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 .form-group label { font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; font-family:'Oswald',sans-serif; }
 .form-group input, .form-group select { padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.85rem; font-family:'Source Sans 3',sans-serif; }
 .form-group input:focus, .form-group select:focus { outline:none; border-color:var(--accent); }
+
+/* Custom Team Dropdown (with logos) */
+.team-dd { position:relative; }
+.team-dd-trigger { width:100%; display:flex; align-items:center; gap:8px; padding:6px 10px; min-height:38px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.85rem; font-family:'Source Sans 3',sans-serif; cursor:pointer; text-align:left; }
+.team-dd-trigger:hover { border-color:var(--text-dim); }
+.team-dd.open .team-dd-trigger { border-color:var(--accent); }
+.team-dd-trigger img { width:24px; height:24px; object-fit:contain; flex-shrink:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4)); }
+.team-dd-trigger .team-dd-abbr { font-family:'Oswald',sans-serif; font-weight:700; font-size:0.95rem; }
+.team-dd-trigger .team-dd-name { color:var(--text-dim); font-size:0.8rem; }
+.team-dd-trigger .team-dd-placeholder { color:var(--text-dim); flex:1; }
+.team-dd-trigger .team-dd-caret { margin-left:auto; color:var(--text-dim); font-size:0.7rem; transition:transform 0.15s; }
+.team-dd.open .team-dd-trigger .team-dd-caret { transform:rotate(180deg); color:var(--accent); }
+.team-dd-spacer { flex:1; }
+.team-dd-panel { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:50; background:var(--surface); border:1px solid var(--accent); border-radius:8px; max-height:320px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+.team-dd.open .team-dd-panel { display:block; }
+.team-dd-search { position:sticky; top:0; padding:8px; background:var(--surface); border-bottom:1px solid var(--border); }
+.team-dd-search input { width:100%; padding:6px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:0.85rem; font-family:'Source Sans 3',sans-serif; }
+.team-dd-search input:focus { outline:none; border-color:var(--accent); }
+.team-dd-option { display:flex; align-items:center; gap:10px; padding:8px 12px; cursor:pointer; border-bottom:1px solid rgba(36,48,85,0.4); transition:background 0.1s; }
+.team-dd-option:last-child { border-bottom:none; }
+.team-dd-option:hover, .team-dd-option.kbd-focus { background:var(--accent-glow); }
+.team-dd-option.disabled { opacity:0.3; cursor:not-allowed; }
+.team-dd-option.disabled:hover { background:transparent; }
+.team-dd-option img { width:28px; height:28px; object-fit:contain; flex-shrink:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4)); }
+.team-dd-option .team-dd-abbr { font-family:'Oswald',sans-serif; font-weight:700; font-size:0.95rem; min-width:40px; }
+.team-dd-option .team-dd-name { color:var(--text-dim); font-size:0.85rem; }
+.team-dd-empty { padding:16px; text-align:center; color:var(--text-dim); font-size:0.85rem; }
 
 /* Game result row in admin */
 .result-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
@@ -178,6 +209,7 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
   .stat-card { padding:10px 12px; min-width:90px; }
   .stat-card .value { font-size:1.2rem; }
   .team-pick { padding:10px 8px; }
+  .team-logo { width:28px; height:28px; }
 }
 
 /* Loading */
@@ -193,10 +225,18 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
   <div id="login-screen" class="login-screen">
     <div class="login-box">
       <h2>🏈 NFL Picks</h2>
-      <p>Pick your player to get started</p>
-      <div class="player-list" id="player-list">
-        <div class="loading"><div class="spinner"></div>Loading players...</div>
-      </div>
+      <p>Sign in to access your league</p>
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+        </svg>
+        <span>Sign in with Google</span>
+      </button>
+      <div id="signin-error" style="display:none; margin-top:14px; padding:10px; background:rgba(255,71,87,0.1); border:1px solid var(--red); border-radius:6px; color:var(--red); font-size:0.8rem; text-align:left;"></div>
+      <p style="margin-top:18px; font-size:0.75rem; color:var(--text-dim);">First-time visitor? Sign in, then claim your existing player or use an invite link to create a new one.</p>
     </div>
   </div>
 
@@ -204,11 +244,11 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
   <div id="join-screen" class="login-screen" style="display:none;">
     <div class="login-box">
       <h2>🏈 Join League</h2>
-      <p>Request to join this NFL Picks league. The admin will review and approve your request.</p>
+      <p id="join-screen-message">Enter your name to join this NFL Picks league.</p>
       <div class="form-row" style="justify-content:center; margin-top:12px;">
         <input type="text" id="join-name-input" placeholder="Your name" style="padding:10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:1rem; width:100%;">
       </div>
-      <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="submitJoinRequest()">Request to Join</button>
+      <button class="btn btn-primary" id="join-submit-btn" style="margin-top:12px; width:100%;" onclick="submitJoinRequest()">Join League</button>
     </div>
   </div>
 
@@ -218,7 +258,6 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
       <h2 id="waiting-title">⏳ Pending Approval</h2>
       <p id="waiting-message">Your request has been sent to the admin. Check back soon!</p>
       <div class="form-row" style="justify-content:center; margin-top:16px; gap:8px;">
-        <button class="btn btn-primary" onclick="checkMyRequestStatus()">Check Status</button>
         <button class="btn btn-outline" onclick="cancelJoinRequest()">Cancel Request</button>
       </div>
     </div>
@@ -299,14 +338,24 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
       <!-- Invite Link -->
       <div class="admin-section" style="border-color:var(--blue);">
         <h3 style="color:var(--blue);">🔗 League Invites</h3>
-        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px;">Share this link with friends. They'll submit a join request that you can approve below.</p>
+        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px;">Share the link or QR code with friends. Anyone with it can join (or require approval below).</p>
         <div id="invite-link-display"></div>
+        <div class="form-row" style="margin-top:14px;">
+          <div class="form-group" style="flex:1;">
+            <label>Require Admin Approval for New Joiners</label>
+            <select id="admin-require-approval" onchange="saveRequireApproval()">
+              <option value="false">No — instant join</option>
+              <option value="true">Yes — admin must approve each request</option>
+            </select>
+          </div>
+        </div>
         <div id="pending-requests-list" style="margin-top:16px;"></div>
       </div>
 
       <!-- Manage Players -->
       <div class="admin-section">
         <h3>Players</h3>
+        <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px;">Players added here are unclaimed. They become live when someone signs in with Google and types this exact name on the claim screen.</p>
         <div class="form-row">
           <div class="form-group">
             <label>Player Name</label>
@@ -357,11 +406,25 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
           </div>
           <div class="form-group">
             <label>Away Team</label>
-            <select id="add-game-away"></select>
+            <div class="team-dd" data-target="add-game-away">
+              <button type="button" class="team-dd-trigger" onclick="toggleTeamDD(this)" aria-haspopup="listbox" aria-expanded="false">
+                <span class="team-dd-placeholder">Select team</span>
+                <span class="team-dd-caret">▾</span>
+              </button>
+              <div class="team-dd-panel" role="listbox"></div>
+              <select id="add-game-away" hidden></select>
+            </div>
           </div>
           <div class="form-group">
             <label>Home Team</label>
-            <select id="add-game-home"></select>
+            <div class="team-dd" data-target="add-game-home">
+              <button type="button" class="team-dd-trigger" onclick="toggleTeamDD(this)" aria-haspopup="listbox" aria-expanded="false">
+                <span class="team-dd-placeholder">Select team</span>
+                <span class="team-dd-caret">▾</span>
+              </button>
+              <div class="team-dd-panel" role="listbox"></div>
+              <select id="add-game-home" hidden></select>
+            </div>
           </div>
         </div>
         <div class="form-row">
@@ -430,7 +493,10 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<!-- QR Code generator (for invite links) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
 <script>
 // ── Firebase Config ──
@@ -444,6 +510,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const firebaseAuth = firebase.auth();
 
 // ── NFL Teams ──
 const NFL_TEAMS = [
@@ -481,56 +548,68 @@ const NFL_TEAMS = [
   { abbr:'WAS', name:'Commanders', conf:'NFC', div:'East', color:'#5A1414' }
 ];
 const teamMap = {};
-// Ensure every team color is readable against the dark app background.
-// Dark hues (luminance < 0.15) get lifted in HSL space — hue & saturation preserved,
-// lightness pushed to ~60%. This auto-fixes pure-black, dark-navy, dark-burgundy etc.
-function readableOnDark(hex) {
-  let r = parseInt(hex.slice(1,3), 16) / 255;
-  let g = parseInt(hex.slice(3,5), 16) / 255;
-  let b = parseInt(hex.slice(5,7), 16) / 255;
-  const lin = c => c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
-  const lum = 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b);
-  if (lum >= 0.15) return hex;
-  // RGB → HSL
+NFL_TEAMS.forEach(t => teamMap[t.abbr] = t);
+
+// ESPN's public team logo CDN uses lowercase team abbreviations in the path.
+// Washington is the one mismatch with this app's abbreviations.
+const LOGO_ABBR_MAP = { WAS: 'wsh' };
+function getTeamLogoUrl(teamAbbr) {
+  const logoAbbr = LOGO_ABBR_MAP[teamAbbr] || String(teamAbbr || '').toLowerCase();
+  return `https://a.espncdn.com/i/teamlogos/nfl/500/${logoAbbr}.png`;
+}
+
+// Returns a version of a team color that's readable on the dark app background.
+// Dark navy/black primaries (Bears, Patriots, Raiders, Titans, Texans, Giants…)
+// get lightened while preserving hue, so the team stays identifiable.
+const _readableColorCache = {};
+function readableTeamColor(hex) {
+  if (!hex) return '#e8ecf4';
+  if (_readableColorCache[hex] !== undefined) return _readableColorCache[hex];
+  const m = String(hex).match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return (_readableColorCache[hex] = hex);
+  let r = parseInt(m[1].slice(0,2), 16) / 255;
+  let g = parseInt(m[1].slice(2,4), 16) / 255;
+  let b = parseInt(m[1].slice(4,6), 16) / 255;
   const max = Math.max(r,g,b), min = Math.min(r,g,b);
-  const l = (max+min)/2;
+  const l = (max + min) / 2;
+  // Bright enough already → use the team's actual color (Vikings purple, Niners red, etc. stay authentic)
+  if (l >= 0.30) return (_readableColorCache[hex] = hex);
+  // Convert to HSL
   let h = 0, s = 0;
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d/(2-max-min) : d/(max+min);
-    if (max === r) h = ((g-b)/d) + (g<b ? 6 : 0);
-    else if (max === g) h = (b-r)/d + 2;
-    else h = (r-g)/d + 4;
-    h /= 6;
+    switch (max) {
+      case r: h = ((g-b)/d + (g<b ? 6 : 0)) / 6; break;
+      case g: h = ((b-r)/d + 2) / 6; break;
+      case b: h = ((r-g)/d + 4) / 6; break;
+    }
   }
-  // Bump lightness, keep hue/saturation
-  const newL = 0.6;
-  let nr, ng, nb;
-  if (s === 0) { nr = ng = nb = newL; }
-  else {
-    const q = newL < 0.5 ? newL*(1+s) : newL + s - newL*s;
-    const p = 2*newL - q;
-    const h2r = t => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q-p)*6*t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q-p)*(2/3 - t)*6;
-      return p;
-    };
-    nr = h2r(h + 1/3);
-    ng = h2r(h);
-    nb = h2r(h - 1/3);
-  }
-  const toHex = x => Math.round(x*255).toString(16).padStart(2,'0');
-  return '#' + toHex(nr) + toHex(ng) + toHex(nb);
+  // Achromatic (e.g. Raiders pure black) → return a neutral light grey
+  if (s < 0.08) return (_readableColorCache[hex] = '#c8ccd4');
+  // Otherwise lift lightness while keeping hue and at least decent saturation
+  const newL = 0.62;
+  const newS = Math.max(s, 0.55);
+  const q = newL < 0.5 ? newL*(1+newS) : newL + newS - newL*newS;
+  const p = 2*newL - q;
+  const h2rgb = (p, q, t) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q-p)*6*t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q-p)*(2/3 - t)*6;
+    return p;
+  };
+  const nr = h2rgb(p, q, h + 1/3);
+  const ng = h2rgb(p, q, h);
+  const nb = h2rgb(p, q, h - 1/3);
+  const toHex = c => Math.round(c*255).toString(16).padStart(2,'0');
+  return (_readableColorCache[hex] = '#' + toHex(nr) + toHex(ng) + toHex(nb));
 }
-NFL_TEAMS.forEach(t => { t.color = readableOnDark(t.color); teamMap[t.abbr] = t; });
 
 // ── State ──
 let currentUser = null;
 let isAdmin = false;
-let config = { currentWeek:0, preseasonLocked:false, weeklyLocked:false, season:2026 };
+let config = { currentWeek:0, preseasonLocked:false, weeklyLocked:false, season:2026, requireApproval:false };
 let allGames = [];
 let allPlayers = [];
 let preseasonPicks = {};
@@ -651,28 +730,133 @@ async function init() {
   await loadConfig();
   await loadPlayers();
 
-  // Check if user has a pending request stored in localStorage
-  const storedRequestId = localStorage.getItem(LS_REQUEST_ID);
-  if (storedRequestId) {
-    const status = await handleStoredRequest(storedRequestId);
-    if (status === 'handled') return; // Screen is set, don't fall through
+  // Firebase Auth state is the source of truth for "who is signed in".
+  // The listener runs immediately with the current state and on every change.
+  firebaseAuth.onAuthStateChanged(handleAuthStateChange);
+}
+
+// Tracks the last uid we routed for, to avoid redundant re-renders
+let _routedForUid = undefined;
+
+async function handleAuthStateChange(user) {
+  // user is null when signed out, or a Firebase User object when signed in
+  if (!user) {
+    _routedForUid = null;
+    currentUser = null;
+    isAdmin = false;
+    stopLockRefresh();
+    document.getElementById('admin-tab').style.display = 'none';
+    showScreen('login-screen');
+    return;
   }
 
-  // Check URL for invite code
+  // Avoid double-routing for the same user (auth listener can fire on token refresh)
+  if (_routedForUid === user.uid && currentUser) return;
+  _routedForUid = user.uid;
+
+  // Reload players in case they changed since last load
+  await loadPlayers();
+
+  // Find a player record linked to this auth uid
+  const linkedPlayer = allPlayers.find(p => p.uid === user.uid);
+  if (linkedPlayer) {
+    loginAs(linkedPlayer.id);
+    return;
+  }
+
+  // No linked player — check if there's an outstanding pending join request from this uid
+  try {
+    const pendingSnap = await db.collection(COL.joinRequests)
+      .where('uid', '==', user.uid)
+      .where('status', '==', 'pending')
+      .limit(1)
+      .get();
+    if (!pendingSnap.empty) {
+      const reqDoc = pendingSnap.docs[0];
+      const reqData = reqDoc.data();
+      document.getElementById('waiting-title').innerHTML = '⏳ Pending Approval';
+      document.getElementById('waiting-message').textContent = `Hi ${reqData.name}! Your request is waiting for admin approval. You'll be let in automatically once approved.`;
+      showScreen('waiting-screen');
+      // Real-time listener: when admin approves or rejects, react immediately
+      reqDoc.ref.onSnapshot(async snap => {
+        if (!snap.exists) return;
+        const d = snap.data();
+        if (d.status === 'approved' && d.playerId) {
+          await loadPlayers();
+          loginAs(d.playerId);
+        } else if (d.status === 'rejected') {
+          document.getElementById('waiting-title').innerHTML = '❌ Request Denied';
+          document.getElementById('waiting-message').textContent = `Sorry ${d.name}, the admin didn't approve your join request.`;
+        }
+      });
+      return;
+    }
+  } catch (e) { console.warn('Pending request check failed:', e); }
+
+  // Show the claim/create screen, pre-filled with Google display name
+  await showClaimOrCreateScreen(user);
+}
+
+async function showClaimOrCreateScreen(user) {
   const params = new URLSearchParams(window.location.search);
   const inviteCode = params.get('join');
-  if (inviteCode) {
-    if (config.inviteCode && inviteCode === config.inviteCode) {
-      showScreen('join-screen');
-      return;
-    } else {
-      toast('Invalid or expired invite link');
-      // Fall through to regular login
-    }
-  }
+  const validInvite = inviteCode && config.inviteCode && inviteCode === config.inviteCode;
+  const isFirstUser = allPlayers.length === 0;
+  const displayName = user.displayName || (user.email ? user.email.split('@')[0] : '');
 
-  showScreen('login-screen');
-  renderLogin();
+  const msgEl = document.getElementById('join-screen-message');
+  const btnEl = document.getElementById('join-submit-btn');
+  const nameInput = document.getElementById('join-name-input');
+  if (nameInput) nameInput.value = displayName;
+
+  if (isFirstUser) {
+    msgEl.textContent = `Welcome, ${displayName}! You'll be the league admin. Confirm your name to create the league.`;
+    btnEl.textContent = 'Create League';
+  } else if (validInvite) {
+    msgEl.textContent = config.requireApproval
+      ? `Welcome, ${displayName}! Submit your name and the admin will review.`
+      : `Welcome, ${displayName}! Enter your name to join.`;
+    btnEl.textContent = config.requireApproval ? 'Request to Join' : 'Join League';
+  } else {
+    msgEl.innerHTML = `Hi ${displayName}! If you already have a player in this league, enter your exact name to claim it. Otherwise ask the admin for an invite link.`;
+    btnEl.textContent = 'Claim Player';
+  }
+  showScreen('join-screen');
+}
+
+async function signInWithGoogle() {
+  const errEl = document.getElementById('signin-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await firebaseAuth.signInWithPopup(provider);
+    // onAuthStateChanged handles the rest
+  } catch (e) {
+    console.error('Sign-in error:', e);
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      return; // user dismissed — silent
+    }
+    if (e.code === 'auth/popup-blocked') {
+      try {
+        await firebaseAuth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+        return;
+      } catch (e2) { showSignInError(e2.message); return; }
+    }
+    if (e.code === 'auth/operation-not-allowed') {
+      showSignInError('Google sign-in is not enabled in this Firebase project. Enable it in Firebase Console → Authentication → Sign-in method.');
+      return;
+    }
+    if (e.code === 'auth/unauthorized-domain') {
+      showSignInError(`This domain (${window.location.hostname}) is not authorized in Firebase. Add it in Firebase Console → Authentication → Settings → Authorized domains.`);
+      return;
+    }
+    showSignInError(e.message || 'Sign-in failed');
+  }
+}
+
+function showSignInError(msg) {
+  const el = document.getElementById('signin-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
 // Show only one screen at a time
@@ -681,47 +865,6 @@ function showScreen(id) {
     const el = document.getElementById(s);
     if (el) el.style.display = (s === id) ? (s === 'main-app' ? 'block' : 'flex') : 'none';
   });
-}
-
-// Handle returning user with a stored request
-async function handleStoredRequest(requestId) {
-  try {
-    const doc = await db.collection(COL.joinRequests).doc(requestId).get();
-    if (!doc.exists) {
-      localStorage.removeItem(LS_REQUEST_ID);
-      return null;
-    }
-    const data = doc.data();
-
-    if (data.status === 'approved' && data.playerId) {
-      // Auto-login as the approved player
-      const player = allPlayers.find(p => p.id === data.playerId);
-      if (player) {
-        localStorage.removeItem(LS_REQUEST_ID);
-        loginAs(player.id);
-        return 'handled';
-      }
-      // Player might have been deleted — clear and fall through
-      localStorage.removeItem(LS_REQUEST_ID);
-      return null;
-    }
-
-    if (data.status === 'rejected') {
-      document.getElementById('waiting-title').innerHTML = '❌ Request Denied';
-      document.getElementById('waiting-message').textContent = `Sorry ${data.name}, the admin didn't approve your join request.`;
-      showScreen('waiting-screen');
-      return 'handled';
-    }
-
-    // Still pending
-    document.getElementById('waiting-title').innerHTML = '⏳ Pending Approval';
-    document.getElementById('waiting-message').textContent = `Hi ${data.name}! Your request is waiting for admin approval. Check back soon.`;
-    showScreen('waiting-screen');
-    return 'handled';
-  } catch (e) {
-    console.error('Error checking request:', e);
-    return null;
-  }
 }
 
 // ── Auth / Login ──
@@ -751,7 +894,7 @@ async function createFirstPlayer() {
   if(!name) return;
   const ref = await db.collection(COL.players).add({ name, isAdmin:true });
   await db.collection(COL.config).doc('settings').set({
-    currentWeek:0, preseasonLocked:false, weeklyLocked:false, season:2026
+    currentWeek:0, preseasonLocked:false, weeklyLocked:false, season:2026, requireApproval:false
   });
   await loadPlayers();
   loginAs(ref.id);
@@ -769,57 +912,122 @@ async function loginAs(playerId) {
   await loadAppData();
 }
 
-function logout() {
-  currentUser = null;
-  isAdmin = false;
-  stopLockRefresh();
-  document.getElementById('admin-tab').style.display='none';
-  showScreen('login-screen');
-  renderLogin();
+async function logout() {
+  await firebaseAuth.signOut();
+  // onAuthStateChanged handles clearing currentUser, hiding admin tab, and showing login-screen
 }
 
-// ── Join Request Flow ──
+// ── Join / Claim Flow (auth-driven) ──
+// Unified handler: claim existing unclaimed player, create new (via invite or first-user), or submit join request.
 async function submitJoinRequest() {
+  const user = firebaseAuth.currentUser;
+  if (!user) return toast('Not signed in');
+
   const name = document.getElementById('join-name-input').value.trim();
   if (!name) return toast('Please enter your name');
 
-  // Check for duplicate name
-  if (allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    return toast('That name is already taken');
-  }
+  // Refresh players so collision checks are accurate
+  await loadPlayers();
+
+  const params = new URLSearchParams(window.location.search);
+  const inviteCode = params.get('join');
+  const validInvite = inviteCode && config.inviteCode && inviteCode === config.inviteCode;
+  const isFirstUser = allPlayers.length === 0;
+
+  const existing = allPlayers.find(p => p.name.toLowerCase() === name.toLowerCase());
 
   try {
-    const ref = await db.collection(COL.joinRequests).add({
-      name,
-      status: 'pending',
-      requestedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    localStorage.setItem(LS_REQUEST_ID, ref.id);
-    document.getElementById('waiting-title').innerHTML = '⏳ Pending Approval';
-    document.getElementById('waiting-message').textContent = `Hi ${name}! Your request has been sent. The admin will review it soon.`;
-    showScreen('waiting-screen');
+    // Case 1: A player with this name already exists
+    if (existing) {
+      if (existing.uid && existing.uid !== user.uid) {
+        return toast('That name is already claimed by another account');
+      }
+      if (existing.uid === user.uid) {
+        // Already linked — just log in
+        loginAs(existing.id);
+        return;
+      }
+      // Unclaimed existing player — claim it by linking this uid
+      await db.collection(COL.players).doc(existing.id).update({
+        uid: user.uid,
+        email: user.email || ''
+      });
+      await loadPlayers();
+      loginAs(existing.id);
+      toast(`Welcome, ${existing.name}!`);
+      return;
+    }
+
+    // Case 2: No existing player — we need to create one
+    if (isFirstUser) {
+      // First-ever user becomes the league admin
+      const ref = await db.collection(COL.players).add({
+        name, isAdmin: true, uid: user.uid, email: user.email || ''
+      });
+      await db.collection(COL.config).doc('settings').set({
+        currentWeek: 0, preseasonLocked: false, weeklyLocked: false, season: 2026, requireApproval: false
+      });
+      await loadConfig();
+      await loadPlayers();
+      loginAs(ref.id);
+      toast(`Welcome, ${name}! You're the league admin.`);
+      return;
+    }
+
+    if (!validInvite) {
+      return toast('No player with that name. You need an invite link from the admin to create a new player record.');
+    }
+
+    if (config.requireApproval) {
+      // Create pending request tied to this uid
+      await db.collection(COL.joinRequests).add({
+        name,
+        uid: user.uid,
+        email: user.email || '',
+        status: 'pending',
+        requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // Re-run the auth handler so we move to the waiting screen + listener
+      _routedForUid = undefined;
+      await handleAuthStateChange(user);
+    } else {
+      // Instant-join
+      const ref = await db.collection(COL.players).add({
+        name, isAdmin: false, uid: user.uid, email: user.email || ''
+      });
+      await loadPlayers();
+      loginAs(ref.id);
+      toast(`Welcome, ${name}!`);
+    }
   } catch (e) {
     console.error(e);
-    toast('Failed to submit request: ' + e.message);
+    toast('Failed: ' + e.message);
   }
-}
-
-async function checkMyRequestStatus() {
-  const requestId = localStorage.getItem(LS_REQUEST_ID);
-  if (!requestId) { showScreen('login-screen'); renderLogin(); return; }
-  await loadPlayers(); // reload in case they were just approved
-  await handleStoredRequest(requestId);
 }
 
 async function cancelJoinRequest() {
-  if (!confirm('Cancel your join request?')) return;
-  const requestId = localStorage.getItem(LS_REQUEST_ID);
-  if (requestId) {
-    try { await db.collection(COL.joinRequests).doc(requestId).delete(); } catch(e) {}
+  if (!confirm('Cancel your join request and sign out?')) return;
+  const user = firebaseAuth.currentUser;
+  if (user) {
+    try {
+      const snap = await db.collection(COL.joinRequests)
+        .where('uid', '==', user.uid)
+        .where('status', '==', 'pending')
+        .get();
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    } catch (e) { console.warn('Failed to clean up requests:', e); }
   }
-  localStorage.removeItem(LS_REQUEST_ID);
-  showScreen('login-screen');
-  renderLogin();
+  await firebaseAuth.signOut();
+}
+
+// Toggle approval requirement (admin)
+async function saveRequireApproval() {
+  const val = document.getElementById('admin-require-approval').value === 'true';
+  config.requireApproval = val;
+  await db.collection(COL.config).doc('settings').set({ ...config, requireApproval: val }, { merge: true });
+  toast(val ? 'Approval required for new joiners' : 'Instant-join enabled');
 }
 
 // ── Load Data ──
@@ -988,7 +1196,8 @@ function renderTeamPick(game, teamAbbr, side, myPick, locked, mode) {
   const clickHandler = (locked || hasResult) ? '' : `onclick="makePick('${mode}','${game.id}','${teamAbbr}')"`;
 
   return `<button class="${cls}" ${clickHandler}>
-    <span class="team-abbr" style="color:${team.color}">${team.abbr}</span>
+    <img class="team-logo" src="${getTeamLogoUrl(team.abbr)}" alt="${team.abbr} logo" loading="lazy" onerror="this.style.display='none'">
+    <span class="team-abbr" style="color:${readableTeamColor(team.color)}">${team.abbr}</span>
     <span class="team-name">${team.name}</span>
     ${indicatorCls ? `<span class="pick-indicator ${indicatorCls}"></span>` : ''}
   </button>`;
@@ -1413,12 +1622,131 @@ function populateAdminDropdowns() {
   document.getElementById('admin-current-week').value = config.currentWeek;
   document.getElementById('admin-preseason-locked').value = String(config.preseasonLocked);
   document.getElementById('admin-weekly-locked').value = String(config.weeklyLocked);
+  const reqApprovalEl = document.getElementById('admin-require-approval');
+  if (reqApprovalEl) reqApprovalEl.value = String(!!config.requireApproval);
 
-  // Team selects
+  // Team selects (hidden native selects + custom dropdown panels with logos)
   const teamOptions = '<option value="">Select</option>' + NFL_TEAMS.map(t=>`<option value="${t.abbr}">${t.abbr} - ${t.name}</option>`).join('');
   document.getElementById('add-game-away').innerHTML = teamOptions;
   document.getElementById('add-game-home').innerHTML = teamOptions;
+  buildTeamDDPanel('add-game-away');
+  buildTeamDDPanel('add-game-home');
 }
+
+// ── Custom Team Dropdown (with logos) ──
+function buildTeamDDPanel(selectId) {
+  const wrap = document.querySelector(`.team-dd[data-target="${selectId}"]`);
+  if (!wrap) return;
+  const panel = wrap.querySelector('.team-dd-panel');
+  const sorted = [...NFL_TEAMS].sort((a,b) => a.name.localeCompare(b.name));
+  panel.innerHTML = `
+    <div class="team-dd-search">
+      <input type="text" placeholder="Filter teams…" oninput="filterTeamDD(this)" onclick="event.stopPropagation()">
+    </div>
+    ${sorted.map(t => `
+      <div class="team-dd-option" data-abbr="${t.abbr}" data-name="${t.name.toLowerCase()}" onclick="selectTeamDD(this)">
+        <img src="${getTeamLogoUrl(t.abbr)}" alt="${t.abbr}" loading="lazy" onerror="this.style.visibility='hidden'">
+        <span class="team-dd-abbr" style="color:${readableTeamColor(t.color)}">${t.abbr}</span>
+        <span class="team-dd-name">${t.name}</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+function toggleTeamDD(triggerEl) {
+  const wrap = triggerEl.closest('.team-dd');
+  const isOpen = wrap.classList.contains('open');
+  // Close all other dropdowns first
+  document.querySelectorAll('.team-dd.open').forEach(w => {
+    w.classList.remove('open');
+    w.querySelector('.team-dd-trigger').setAttribute('aria-expanded', 'false');
+  });
+  if (!isOpen) {
+    wrap.classList.add('open');
+    triggerEl.setAttribute('aria-expanded', 'true');
+    const searchInput = wrap.querySelector('.team-dd-search input');
+    if (searchInput) { searchInput.value = ''; filterTeamDD(searchInput); setTimeout(() => searchInput.focus(), 0); }
+  }
+}
+
+function selectTeamDD(optionEl) {
+  if (optionEl.classList.contains('disabled')) return;
+  const wrap = optionEl.closest('.team-dd');
+  const abbr = optionEl.dataset.abbr;
+  const team = teamMap[abbr];
+  const selectId = wrap.dataset.target;
+  // Update hidden native select so existing addGame() reads work unchanged
+  document.getElementById(selectId).value = abbr;
+  // Update trigger button display
+  const trigger = wrap.querySelector('.team-dd-trigger');
+  trigger.innerHTML = `
+    <img src="${getTeamLogoUrl(abbr)}" alt="${abbr}" onerror="this.style.visibility='hidden'">
+    <span class="team-dd-abbr" style="color:${readableTeamColor(team.color)}">${abbr}</span>
+    <span class="team-dd-name">${team.name}</span>
+    <span class="team-dd-caret">▾</span>
+  `;
+  wrap.classList.remove('open');
+  trigger.setAttribute('aria-expanded', 'false');
+  // Prevent picking same team for both sides — grey out matching option in the OTHER dropdown
+  syncTeamDDDisabled();
+}
+
+function syncTeamDDDisabled() {
+  const awayVal = document.getElementById('add-game-away').value;
+  const homeVal = document.getElementById('add-game-home').value;
+  const apply = (panelSelectId, otherVal) => {
+    const panel = document.querySelector(`.team-dd[data-target="${panelSelectId}"] .team-dd-panel`);
+    if (!panel) return;
+    panel.querySelectorAll('.team-dd-option').forEach(opt => {
+      opt.classList.toggle('disabled', !!otherVal && opt.dataset.abbr === otherVal);
+    });
+  };
+  apply('add-game-away', homeVal);
+  apply('add-game-home', awayVal);
+}
+
+function filterTeamDD(inputEl) {
+  const q = inputEl.value.trim().toLowerCase();
+  const panel = inputEl.closest('.team-dd-panel');
+  let visible = 0;
+  panel.querySelectorAll('.team-dd-option').forEach(opt => {
+    const match = !q || opt.dataset.abbr.toLowerCase().includes(q) || opt.dataset.name.includes(q);
+    opt.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  // Show/manage empty state
+  let empty = panel.querySelector('.team-dd-empty');
+  if (visible === 0) {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'team-dd-empty';
+      empty.textContent = 'No teams match';
+      panel.appendChild(empty);
+    }
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.team-dd')) {
+    document.querySelectorAll('.team-dd.open').forEach(w => {
+      w.classList.remove('open');
+      w.querySelector('.team-dd-trigger').setAttribute('aria-expanded', 'false');
+    });
+  }
+});
+
+// Close dropdowns on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.team-dd.open').forEach(w => {
+      w.classList.remove('open');
+      w.querySelector('.team-dd-trigger').setAttribute('aria-expanded', 'false');
+    });
+  }
+});
 
 function renderAdmin() {
   renderAdminInvite();
@@ -1443,18 +1771,41 @@ async function renderAdminInvite() {
   const fullLink = hasCode ? `${baseUrl}?join=${config.inviteCode}` : '';
 
   display.innerHTML = hasCode ? `
-    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px; margin-bottom:10px;">
-      <div style="font-size:0.7rem; color:var(--text-dim); font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Share this link</div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input type="text" readonly value="${fullLink}" id="invite-link-input" style="flex:1; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:0.8rem; font-family:monospace;">
-        <button class="btn btn-primary btn-small" onclick="copyInviteLink()">Copy</button>
+    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:10px;">
+      <div style="font-size:0.7rem; color:var(--text-dim); font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Share this link or QR code</div>
+      <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <div style="flex:1 1 240px; min-width:0;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" readonly value="${fullLink}" id="invite-link-input" style="flex:1; min-width:0; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:0.8rem; font-family:monospace;">
+            <button class="btn btn-primary btn-small" onclick="copyInviteLink()">Copy</button>
+          </div>
+          <div style="margin-top:8px; font-size:0.75rem; color:var(--text-dim);">Code: <strong style="color:var(--blue); font-family:'Oswald',sans-serif; letter-spacing:2px;">${config.inviteCode}</strong></div>
+          <div style="margin-top:6px; font-size:0.72rem; color:var(--text-dim);">${config.requireApproval ? '⏳ New joiners will appear below for your approval.' : '⚡ Instant-join is on — anyone with the link is added immediately.'}</div>
+        </div>
+        <div id="invite-qr" style="background:#fff; padding:8px; border-radius:6px; line-height:0;"></div>
       </div>
-      <div style="margin-top:6px; font-size:0.75rem; color:var(--text-dim);">Code: <strong style="color:var(--blue); font-family:'Oswald',sans-serif; letter-spacing:2px;">${config.inviteCode}</strong></div>
     </div>
     <button class="btn btn-outline btn-small" onclick="regenerateInviteCode()">Regenerate Code (invalidates old link)</button>
   ` : `
     <button class="btn btn-primary btn-small" onclick="regenerateInviteCode()">Generate Invite Link</button>
   `;
+
+  // Render QR code if we have an invite link
+  if (hasCode) {
+    const qrEl = document.getElementById('invite-qr');
+    try {
+      if (typeof qrcode === 'undefined') throw new Error('QR library not loaded');
+      const qr = qrcode(0, 'M'); // auto type number, medium error correction
+      qr.addData(fullLink);
+      qr.make();
+      qrEl.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+      const svg = qrEl.querySelector('svg');
+      if (svg) { svg.style.width = '128px'; svg.style.height = '128px'; svg.style.display = 'block'; }
+    } catch (e) {
+      console.warn('QR render failed:', e);
+      qrEl.style.display = 'none';
+    }
+  }
 
   // Load & render pending requests
   const pendingEl = document.getElementById('pending-requests-list');
@@ -1519,10 +1870,12 @@ async function approveRequest(requestId) {
       return toast(`A player named "${reqData.name}" already exists`);
     }
 
-    // Create the player
+    // Create the player, linked to the requester's auth uid so they log in automatically next time
     const playerRef = await db.collection(COL.players).add({
       name: reqData.name,
-      isAdmin: false
+      isAdmin: false,
+      uid: reqData.uid || null,
+      email: reqData.email || ''
     });
 
     // Mark request approved (keep doc so user can auto-login on next visit)
