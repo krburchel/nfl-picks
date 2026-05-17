@@ -606,6 +606,23 @@ function readableTeamColor(hex) {
   return (_readableColorCache[hex] = '#' + toHex(nr) + toHex(ng) + toHex(nb));
 }
 
+// Compare two games chronologically by date then time. Games without a date/time
+// sort to the end so they don't visually clobber scheduled ones.
+function compareGameDateTime(a, b) {
+  const ad = a.date || '9999-99-99';
+  const bd = b.date || '9999-99-99';
+  if (ad !== bd) return ad < bd ? -1 : 1;
+  const at = a.time || '99:99';
+  const bt = b.time || '99:99';
+  if (at !== bt) return at < bt ? -1 : 1;
+  return 0;
+}
+
+// Get all games for a week, sorted chronologically (Thu/Fri first, then Sun, then Mon).
+function getWeekGames(week) {
+  return allGames.filter(g => g.week === week).sort(compareGameDateTime);
+}
+
 // ── State ──
 let currentUser = null;
 let isAdmin = false;
@@ -1152,7 +1169,7 @@ function selectPreseasonWeek(w) {
 }
 
 function renderPreseasonGames() {
-  const games = allGames.filter(g=>g.week===selectedPreseasonWeek);
+  const games = getWeekGames(selectedPreseasonWeek);
   const el = document.getElementById('preseason-games');
   if(games.length===0) { el.innerHTML = `<p style="color:var(--text-dim);text-align:center;padding:40px;">No games for Week ${selectedPreseasonWeek}</p>`; return; }
 
@@ -1311,7 +1328,7 @@ function selectWeeklyWeek(w) {
 }
 
 function renderWeeklyGames() {
-  const games = allGames.filter(g=>g.week===selectedWeeklyWeek);
+  const games = getWeekGames(selectedWeeklyWeek);
   const el = document.getElementById('weekly-games');
   const myPicks = weeklyPicks[selectedWeeklyWeek] || {};
 
@@ -1985,7 +2002,7 @@ async function bulkImport() {
 
 function loadResultsWeek() {
   const week = parseInt(document.getElementById('results-week').value);
-  const games = allGames.filter(g=>g.week===week);
+  const games = getWeekGames(week);
   const el = document.getElementById('results-list');
   const tbGame = getTiebreakerGame();
 
