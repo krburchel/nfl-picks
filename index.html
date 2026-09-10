@@ -1898,8 +1898,13 @@ async function savePreseasonPicks() {
   const serverDoc = await db.collection(COL.preseason).doc(currentUser.id).get();
   const serverPicks = (serverDoc.exists ? serverDoc.data().picks : null) || {};
   const finalPicks = {};
+  const dropped = [];
   for (const g of allGames) {
-    const val = isPreseasonGameLocked(g) ? serverPicks[g.id] : preseasonPicks[g.id];
+    const locked = isPreseasonGameLocked(g);
+    const val = locked ? serverPicks[g.id] : preseasonPicks[g.id];
+    if (locked && preseasonPicks[g.id] && preseasonPicks[g.id] !== serverPicks[g.id]) {
+      dropped.push(`${g.away} @ ${g.home}`);
+    }
     if (val) finalPicks[g.id] = val;
   }
   preseasonPicks = finalPicks;
@@ -1909,7 +1914,12 @@ async function savePreseasonPicks() {
     picks: finalPicks,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
-  toast('Preseason picks saved!');
+  if (dropped.length) {
+    const shown = dropped.slice(0, 3).join(', ');
+    toast(`Saved — but ${dropped.length} locked game${dropped.length>1?'s were':' was'} not applied: ${shown}${dropped.length>3?'…':''}`);
+  } else {
+    toast('Preseason picks saved!');
+  }
   renderPreseason();
 }
 
@@ -2059,9 +2069,15 @@ async function saveWeeklyPicks() {
   const localPicks = weeklyPicks[week] || {};
 
   const finalPicks = {};
+  const dropped = [];
   for (const g of weekGames) {
     const locked = isWeeklyGameLockedNow(g);
     const pickToUse = locked ? serverPicks[g.id] : localPicks[g.id];
+    // A pick made while a game was open, then locked again before saving, would
+    // otherwise vanish here with a success message. Collect those to report.
+    if (locked && localPicks[g.id] && localPicks[g.id] !== serverPicks[g.id]) {
+      dropped.push(`${g.away} @ ${g.home}`);
+    }
     if (pickToUse) finalPicks[g.id] = pickToUse;
   }
 
@@ -2097,7 +2113,11 @@ async function saveWeeklyPicks() {
   if (tiebreakerGuess !== null) weeklyTiebreakerGuesses[week] = tiebreakerGuess;
   else delete weeklyTiebreakerGuesses[week];
 
-  toast(`Week ${week} picks saved!`);
+  if (dropped.length) {
+    toast(`Saved — but ${dropped.length} locked game${dropped.length>1?'s were':' was'} not applied: ${dropped.join(', ')}. Unlock, then save before re-locking.`);
+  } else {
+    toast(`Week ${week} picks saved!`);
+  }
   renderWeekly();
 }
 
