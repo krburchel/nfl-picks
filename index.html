@@ -217,6 +217,10 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
+.unlock-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); font-family:inherit; font-size:0.68rem; padding:2px 7px; border-radius:5px; cursor:pointer; margin-left:6px; }
+.unlock-btn:hover { border-color:var(--accent); color:var(--accent); }
+.unlock-btn.on { border-color:var(--gold); color:var(--gold); }
+
 /* ── Projections ── */
 .proj-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
 .proj-toolbar label { font-size:0.8rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
@@ -448,6 +452,7 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
           </div>
           <button class="btn btn-primary btn-small" onclick="saveSettings()">Save Settings</button>
         </div>
+        <div class="form-row" style="margin-top:8px;" id="admin-unlocked-row"></div>
         <div class="form-row" style="margin-top:8px;">
           <div class="form-group">
             <label>Weekly Picks (current week)</label>
@@ -690,7 +695,7 @@ function getWeekGames(week) {
 // ── State ──
 let currentUser = null;
 let isAdmin = false;
-let config = { currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, weeklyOverride:'auto', season:2026, requireApproval:false };
+let config = { currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, weeklyOverride:'auto', unlockedGames:[], season:2026, requireApproval:false };
 let allGames = [];
 let allPlayers = [];
 let preseasonPicks = {};
@@ -772,6 +777,43 @@ function isPreseasonLockedNow() {
   return isPreseasonAutoLocked();
 }
 
+// Admin can reopen one specific game. This is the most specific rule there
+// is, so it beats both the kickoff check and the week-level overrides.
+function adminUnlockBtn(game, relevant) {
+  if (!isAdmin || game.winner || !relevant) return '';
+  const on = isGameUnlocked(game.id);
+  return ` <button class="unlock-btn ${on?'on':''}" onclick="toggleGameUnlock('${game.id}')">${on?'🔒 Re-lock':'🔓 Unlock'}</button>`;
+}
+
+async function toggleGameUnlock(gameId) {
+  if (!isAdmin) return toast('Admins only');
+  const list = Array.isArray(config.unlockedGames) ? config.unlockedGames.slice() : [];
+  const i = list.indexOf(gameId);
+  if (i !== -1) list.splice(i, 1); else list.push(gameId);
+  config.unlockedGames = list;
+  await db.collection(COL.config).doc('settings').set(config);
+  renderAll();
+  toast(i !== -1 ? 'Game re-locked' : 'Game unlocked for everyone');
+}
+
+async function relockAllGames() {
+  if (!isAdmin) return toast('Admins only');
+  config.unlockedGames = [];
+  await db.collection(COL.config).doc('settings').set(config);
+  renderAll();
+  toast('All games re-locked');
+}
+
+function isGameUnlocked(gameId) {
+  return Array.isArray(config.unlockedGames) && config.unlockedGames.indexOf(gameId) !== -1;
+}
+
+// A preseason game is locked unless the whole preseason is open, or this one
+// game has been individually reopened.
+function isPreseasonGameLocked(game) {
+  return isPreseasonLockedNow() && !isGameUnlocked(game.id);
+}
+
 // Same shape as getPreseasonOverride: tolerates configs written before the
 // tri-state existed, which only carry the weeklyLocked boolean.
 function getWeeklyOverride() {
@@ -781,6 +823,7 @@ function getWeeklyOverride() {
 }
 
 function isWeeklyGameLockedNow(game) {
+  if (isGameUnlocked(game.id)) return false;
   // Both overrides are scoped to the current week, matching the original toggle.
   const isCurrentWeek = game.week === config.currentWeek;
   if (isCurrentWeek) {
@@ -1002,7 +1045,7 @@ async function createFirstPlayer() {
   if(!name) return;
   const ref = await db.collection(COL.players).add({ name, isAdmin:true });
   await db.collection(COL.config).doc('settings').set({
-    currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, weeklyOverride:'auto', season:2026, requireApproval:false
+    currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, weeklyOverride:'auto', unlockedGames:[], season:2026, requireApproval:false
   });
   await loadPlayers();
   loginAs(ref.id);
@@ -1073,7 +1116,7 @@ async function submitJoinRequest() {
         name, isAdmin: true, uid: user.uid, email: user.email || ''
       });
       await db.collection(COL.config).doc('settings').set({
-        currentWeek: 0, preseasonLocked: false, preseasonOverride: 'auto', weeklyLocked: false, weeklyOverride: 'auto', season: 2026, requireApproval: false
+        currentWeek: 0, preseasonLocked: false, preseasonOverride: 'auto', weeklyLocked: false, weeklyOverride: 'auto', unlockedGames: [], season: 2026, requireApproval: false
       });
       await loadConfig();
       await loadPlayers();
@@ -1767,7 +1810,8 @@ function renderPreseason() {
   renderPreseasonGames();
 
   // Save button
-  document.getElementById('save-preseason-btn').disabled = preseasonLocked;
+  const anyPreOpen = allGames.some(g => !isPreseasonGameLocked(g));
+  document.getElementById('save-preseason-btn').disabled = !anyPreOpen;
 }
 
 function selectPreseasonWeek(w) {
@@ -1785,13 +1829,14 @@ function renderPreseasonGames() {
     const hasResult = !!g.winner;
     const isCorrect = hasResult && myPick === g.winner;
     const isWrong = hasResult && myPick && myPick !== g.winner;
-    const locked = isPreseasonLockedNow();
+    const locked = isPreseasonGameLocked(g);
     const cardClass = hasResult ? (isCorrect?'correct':isWrong?'incorrect':'') : (myPick?'picked':'');
     const lockIcon = (locked && !hasResult) ? ' 🔒' : '';
+    const unlockBtn = adminUnlockBtn(g, isPreseasonLockedNow() || isGameUnlocked(g.id));
 
     return `<div class="game-card ${cardClass}">
       <div class="game-meta">
-        <span>${g.date||''} ${g.time||''}${lockIcon}</span>
+        <span>${g.date||''} ${g.time||''}${lockIcon}${unlockBtn}</span>
         <span>${hasResult?'Final':'Week '+g.week}</span>
       </div>
       <div class="game-teams">
@@ -1832,7 +1877,7 @@ function makePick(mode, gameId, team) {
   if (!game) return;
 
   if(mode === 'preseason') {
-    if (isPreseasonLockedNow()) { toast('Preseason picks are locked'); return; }
+    if (isPreseasonGameLocked(game)) { toast('Preseason picks are locked'); return; }
     if(preseasonPicks[gameId] === team) delete preseasonPicks[gameId];
     else preseasonPicks[gameId] = team;
     renderPreseason();
@@ -1847,14 +1892,25 @@ function makePick(mode, gameId, team) {
 }
 
 async function savePreseasonPicks() {
-  if (isPreseasonLockedNow()) return toast('Preseason picks are locked!');
+  if (allGames.every(g => isPreseasonGameLocked(g))) return toast('Preseason picks are locked!');
+  // Merge like the weekly save does: a locked game keeps whatever the server
+  // already has, so a partially-open sheet can't clobber settled picks.
+  const serverDoc = await db.collection(COL.preseason).doc(currentUser.id).get();
+  const serverPicks = (serverDoc.exists ? serverDoc.data().picks : null) || {};
+  const finalPicks = {};
+  for (const g of allGames) {
+    const val = isPreseasonGameLocked(g) ? serverPicks[g.id] : preseasonPicks[g.id];
+    if (val) finalPicks[g.id] = val;
+  }
+  preseasonPicks = finalPicks;
   await db.collection(COL.preseason).doc(currentUser.id).set({
     playerId: currentUser.id,
     playerName: currentUser.name,
-    picks: preseasonPicks,
+    picks: finalPicks,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
   toast('Preseason picks saved!');
+  renderPreseason();
 }
 
 // ── Weekly ──
@@ -1974,10 +2030,11 @@ function renderWeeklyGames() {
     const cardClass = hasResult ? (isCorrect?'correct':isWrong?'incorrect':'') : (myPick?'picked':'');
     const lockIcon = (timeLocked && !hasResult) ? ' 🔒' : '';
     const tbBadge = (tbGame && tbGame.id === g.id) ? ' <span class="tb-badge">🎯 TIEBREAKER</span>' : '';
+    const unlockBtn = adminUnlockBtn(g, isKickoffPassed(g) || isGameUnlocked(g.id));
 
     return `<div class="game-card ${cardClass}">
       <div class="game-meta">
-        <span>${g.date||''} ${g.time||''}${lockIcon}${tbBadge}</span>
+        <span>${g.date||''} ${g.time||''}${lockIcon}${tbBadge}${unlockBtn}</span>
         <span>${hasResult?'Final':'Week '+g.week}</span>
       </div>
       <div class="game-teams">
@@ -2250,6 +2307,14 @@ function populateAdminDropdowns() {
   document.getElementById('admin-current-week').value = config.currentWeek;
   document.getElementById('admin-preseason-locked').value = getPreseasonOverride();
   document.getElementById('admin-weekly-locked').value = getWeeklyOverride();
+  const unlockedRow = document.getElementById('admin-unlocked-row');
+  if (unlockedRow) {
+    const n = Array.isArray(config.unlockedGames) ? config.unlockedGames.length : 0;
+    unlockedRow.innerHTML = n === 0
+      ? '<span class="seed-tb">No individually unlocked games. Use the 🔓 Unlock button on any locked game card.</span>'
+      : `<span class="seed-tb">${n} game${n===1?'':'s'} individually unlocked.</span>
+         <button class="btn btn-small" onclick="relockAllGames()" style="margin-left:8px;">Re-lock all</button>`;
+  }
   const reqApprovalEl = document.getElementById('admin-require-approval');
   if (reqApprovalEl) reqApprovalEl.value = String(!!config.requireApproval);
 
