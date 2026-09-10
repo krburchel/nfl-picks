@@ -216,6 +216,61 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
 .loading { text-align:center; padding:60px 20px; color:var(--text-dim); }
 .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Projections ── */
+.proj-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.proj-toolbar label { font-size:0.8rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
+.proj-toolbar select { background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-family:inherit; font-size:0.9rem; }
+.proj-warn { background:rgba(255,195,18,0.1); border:1px solid var(--gold); color:var(--gold); border-radius:8px; padding:10px 16px; margin-bottom:16px; font-size:0.85rem; }
+.proj-empty { color:var(--text-dim); text-align:center; padding:48px 16px; }
+.proj-section-title { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.06em; font-size:1.05rem; margin:26px 0 12px; color:var(--text); }
+.proj-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+
+.conf-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.conf-card h4 { font-family:'Oswald',sans-serif; font-size:0.95rem; letter-spacing:0.08em; padding:10px 14px; background:var(--surface2); border-bottom:1px solid var(--border); }
+.seed-row { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px solid rgba(36,48,85,0.5); font-size:0.9rem; }
+.seed-row:last-child { border-bottom:none; }
+.seed-row.cut { border-bottom:2px dashed var(--red); }
+.seed-num { width:22px; font-weight:700; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+.seed-row.in .seed-num { color:var(--accent); }
+.seed-logo { width:24px; height:24px; object-fit:contain; flex-shrink:0; }
+.seed-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.seed-rec { font-variant-numeric:tabular-nums; color:var(--text-dim); font-size:0.85rem; }
+.seed-badge { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.05em; padding:2px 6px; border-radius:4px; background:var(--accent-glow); color:var(--accent); }
+.seed-badge.bye { background:rgba(255,195,18,0.15); color:var(--gold); }
+.seed-tb { font-size:0.7rem; color:var(--text-dim); font-style:italic; }
+.cut-label { font-size:0.65rem; color:var(--red); text-transform:uppercase; letter-spacing:0.08em; padding:6px 14px; background:rgba(255,71,87,0.06); }
+
+.div-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.div-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.div-card h5 { font-family:'Oswald',sans-serif; font-size:0.8rem; letter-spacing:0.08em; padding:8px 12px; background:var(--surface2); color:var(--text-dim); border-bottom:1px solid var(--border); }
+.div-row { display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:0.85rem; border-bottom:1px solid rgba(36,48,85,0.4); }
+.div-row:last-child { border-bottom:none; }
+.div-row.winner { background:var(--accent-glow); }
+.div-row .seed-logo { width:20px; height:20px; }
+.div-sub { color:var(--text-dim); font-size:0.75rem; font-variant-numeric:tabular-nums; }
+
+/* Bracket */
+.bracket-conf { margin-bottom:20px; }
+.bracket-rounds { display:grid; grid-template-columns:repeat(3,minmax(180px,1fr)); gap:12px; align-items:start; }
+.bracket-round h6 { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:8px; font-weight:600; }
+.matchup { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:10px; }
+.matchup.pending { opacity:0.45; }
+.mu-team { display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:0.85rem; cursor:pointer; transition:background 0.12s; border-bottom:1px solid rgba(36,48,85,0.5); }
+.mu-team:last-child { border-bottom:none; }
+.mu-team:hover:not(.disabled) { background:var(--surface2); }
+.mu-team.disabled { cursor:default; }
+.mu-team.won { background:var(--accent-glow); font-weight:600; }
+.mu-team.won .mu-seed { color:var(--accent); }
+.mu-team img { width:20px; height:20px; object-fit:contain; }
+.mu-seed { width:16px; font-size:0.7rem; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+.mu-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mu-tbd { padding:8px 10px; font-size:0.8rem; color:var(--text-dim); font-style:italic; }
+.champ-card { background:linear-gradient(135deg,rgba(255,195,18,0.14),rgba(0,212,170,0.10)); border:1px solid var(--gold); border-radius:var(--radius); padding:16px; text-align:center; margin-top:8px; }
+.champ-card .label { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gold); margin-bottom:8px; }
+.champ-card img { width:52px; height:52px; object-fit:contain; }
+.champ-card .name { font-family:'Oswald',sans-serif; font-size:1.2rem; letter-spacing:0.04em; margin-top:6px; }
+@media (max-width:640px) { .bracket-rounds { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -277,6 +332,7 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
       <div class="tab active" data-tab="preseason">Preseason</div>
       <div class="tab" data-tab="weekly">Weekly</div>
       <div class="tab" data-tab="standings">Standings</div>
+      <div class="tab" data-tab="projections">Projections</div>
       <div class="tab" data-tab="admin" id="admin-tab" style="display:none;">Admin</div>
     </div>
 
@@ -331,6 +387,12 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
           <tbody id="standings-body"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- PROJECTIONS TAB -->
+    <div class="tab-content" id="tab-projections">
+      <div class="proj-toolbar" id="proj-toolbar"></div>
+      <div id="proj-body"></div>
     </div>
 
     <!-- ADMIN TAB -->
@@ -643,7 +705,8 @@ const COL = {
   players: 'nfl-picks-players',
   preseason: 'nfl-picks-preseason',
   weekly: 'nfl-picks-weekly',
-  joinRequests: 'nfl-picks-join-requests'
+  joinRequests: 'nfl-picks-join-requests',
+  playoffs: 'nfl-picks-playoffs'
 };
 
 // localStorage keys
@@ -774,6 +837,9 @@ async function handleAuthStateChange(user) {
     currentUser = null;
     isAdmin = false;
     stopLockRefresh();
+    // Projection state is per-player; force a reload on next sign-in.
+    projLoaded = false; projPlayerId = null;
+    projPreseasonDocs = {}; projPlayoffDocs = {}; playoffPicks = {};
     document.getElementById('admin-tab').style.display = 'none';
     showScreen('login-screen');
     return;
@@ -1099,6 +1165,521 @@ async function loadMyWeeklyPicks() {
 }
 
 // ── Tab Switching ──
+
+// ── Projections: records, NFL tiebreakers, seeding, playoff bracket ──
+// Builds a full projected season from a player's preseason pick sheet.
+// Tiebreakers follow the NFL procedure as far as pick data allows: every step
+// through strength of schedule is computable. The remaining steps are all
+// points-based (points scored/allowed rankings, net points, net touchdowns),
+// which a win/loss pick sheet cannot supply, so a tie surviving that far is
+// reported as unresolved rather than guessed at.
+
+let projPlayerId = null;
+let projPreseasonDocs = {};
+let projPlayoffDocs = {};
+let playoffPicks = {};
+let projLoaded = false;
+let playoffsAvailable = true;
+
+function projBuildStats(games, picks) {
+  const st = {};
+  NFL_TEAMS.forEach(t => st[t.abbr] = {
+    abbr:t.abbr, name:t.name, conf:t.conf, div:t.div, divKey:t.conf+' '+t.div,
+    w:0, l:0, divW:0, divL:0, confW:0, confL:0, opp:[], beat:[], h2h:{}, unpicked:0
+  });
+  for (const g of games) {
+    const a = g.away, h = g.home;
+    if (!st[a] || !st[h]) continue;
+    const winner = picks[g.id];
+    if (winner !== a && winner !== h) { st[a].unpicked++; st[h].unpicked++; continue; }
+    const loser = winner === a ? h : a;
+    const sameConf = teamMap[a].conf === teamMap[h].conf;
+    const sameDiv  = sameConf && teamMap[a].div === teamMap[h].div;
+    st[winner].w++; st[loser].l++;
+    if (sameConf) { st[winner].confW++; st[loser].confL++; }
+    if (sameDiv)  { st[winner].divW++;  st[loser].divL++;  }
+    st[a].opp.push(h); st[h].opp.push(a);
+    st[winner].beat.push(loser);
+    if (!st[a].h2h[h]) st[a].h2h[h] = {w:0,l:0};
+    if (!st[h].h2h[a]) st[h].h2h[a] = {w:0,l:0};
+    st[winner].h2h[loser].w++; st[loser].h2h[winner].l++;
+  }
+  return st;
+}
+
+function projPct(w,l) { return (w+l) === 0 ? null : w/(w+l); }
+function projRecPct(t) { return projPct(t.w, t.l); }
+
+function projH2H(pool, st) {
+  const vals = {}; let any = false;
+  for (const t of pool) {
+    let w=0,l=0;
+    for (const o of pool) { if (o===t) continue; const r = st[t].h2h[o]; if (r) { w+=r.w; l+=r.l; } }
+    if (w+l > 0) any = true;
+    vals[t] = projPct(w,l);
+  }
+  if (!any) return null;
+  for (const t of pool) if (vals[t] === null) return null;
+  return vals;
+}
+
+// Wild-card, 3+ clubs: applies only if one club beat all the others, or lost to all.
+function projSweep(pool, st) {
+  const beatAll = [], lostAll = [];
+  for (const t of pool) {
+    let won=0, lost=0, played=0;
+    for (const o of pool) {
+      if (o===t) continue;
+      const r = st[t].h2h[o];
+      if (!r || (r.w+r.l)===0) { played = -1; break; }
+      played++;
+      if (r.l===0 && r.w>0) won++;
+      if (r.w===0 && r.l>0) lost++;
+    }
+    if (played !== pool.length-1) continue;
+    if (won === pool.length-1) beatAll.push(t);
+    if (lost === pool.length-1) lostAll.push(t);
+  }
+  if (beatAll.length === 1) return { type:'filter', pool:[beatAll[0]] };
+  if (lostAll.length === 1) return { type:'filter', pool: pool.filter(t=>t!==lostAll[0]) };
+  return null;
+}
+
+function projCommon(pool, st, minGames) {
+  let common = null;
+  for (const t of pool) {
+    const s = new Set(st[t].opp);
+    common = common === null ? s : new Set([...common].filter(x => s.has(x)));
+  }
+  if (!common || common.size === 0) return null;
+  const vals = {};
+  for (const t of pool) {
+    let w=0,l=0;
+    for (const o of common) { const r = st[t].h2h[o]; if (r) { w+=r.w; l+=r.l; } }
+    if (w+l === 0) return null;
+    if (minGames && (w+l) < minGames) return null;
+    vals[t] = projPct(w,l);
+  }
+  return vals;
+}
+
+function projAgg(list, st) {
+  let w=0,l=0;
+  for (const o of list) { w += st[o].w; l += st[o].l; }
+  const p = projPct(w,l);
+  return p === null ? 0 : p;
+}
+
+const PROJ_STEP_LABEL = {
+  h2h:'head-to-head', h2hsweep:'head-to-head sweep', div:'division record',
+  common:'common games', common4:'common games (min 4)', conf:'conference record',
+  sov:'strength of victory', sos:'strength of schedule'
+};
+
+function projMapVals(pool, fn) {
+  const v = {};
+  for (const t of pool) { const x = fn(t); if (x === null) return null; v[t] = x; }
+  return v;
+}
+function projWrap(v) { return v === null ? null : { type:'values', vals:v }; }
+
+function projRunStep(step, pool, st) {
+  switch (step) {
+    case 'h2h':      return projWrap(projH2H(pool, st));
+    case 'h2hsweep': return projSweep(pool, st);
+    case 'div':      return projWrap(projMapVals(pool, t => projPct(st[t].divW, st[t].divL)));
+    case 'conf':     return projWrap(projMapVals(pool, t => projPct(st[t].confW, st[t].confL)));
+    case 'common':   return projWrap(projCommon(pool, st, 0));
+    case 'common4':  return projWrap(projCommon(pool, st, 4));
+    case 'sov':      return projWrap(projMapVals(pool, t => projAgg(st[t].beat, st)));
+    case 'sos':      return projWrap(projMapVals(pool, t => projAgg(st[t].opp,  st)));
+  }
+  return null;
+}
+
+function projChainFor(mode, n) {
+  if (mode === 'division') return ['h2h','div','common','conf','sov','sos'];
+  return n === 2 ? ['h2h','conf','common4','sov','sos']
+                 : ['h2hsweep','conf','common4','sov','sos'];
+}
+
+function projReduceByDivision(pool, st) {
+  const byDiv = {};
+  for (const t of pool) { const k = st[t].divKey; if (!byDiv[k]) byDiv[k] = []; byDiv[k].push(t); }
+  const out = [];
+  for (const k of Object.keys(byDiv)) {
+    const g = byDiv[k];
+    out.push(g.length === 1 ? g[0] : projSelectChain(g, st, 'division').winner);
+  }
+  return out;
+}
+
+function projSelectChain(group, st, mode) {
+  let pool = [...group];
+  const chain = projChainFor(mode, pool.length);
+  for (const step of chain) {
+    if (pool.length === 1) break;
+    const res = projRunStep(step, pool, st);
+    if (!res) continue;
+    let survivors;
+    if (res.type === 'filter') survivors = res.pool;
+    else {
+      const max = Math.max.apply(null, pool.map(t => res.vals[t]));
+      survivors = pool.filter(t => Math.abs(res.vals[t] - max) < 1e-9);
+    }
+    if (survivors.length < pool.length) {
+      pool = survivors;
+      if (pool.length === 1) return { winner: pool[0], rule: PROJ_STEP_LABEL[step] };
+      // NFL: once a group is down to two, restart at step 1 of the two-club chain.
+      if (pool.length === 2 && group.length > 2) {
+        const r = projSelectChain(pool, st, mode);
+        return { winner: r.winner, rule: r.rule + ' (after ' + PROJ_STEP_LABEL[step] + ')', unresolved: r.unresolved };
+      }
+    }
+  }
+  return { winner: [...pool].sort()[0], rule:'unresolved — needs points data', unresolved:true };
+}
+
+function projSelectTop(group, st, mode) {
+  let pool = group;
+  if (mode === 'wildcard' && pool.length >= 3) {
+    const reduced = projReduceByDivision(pool, st);
+    if (reduced.length === 1) return { winner: reduced[0], rule:'best in own division' };
+    pool = reduced;
+  }
+  if (mode === 'wildcard' && pool.length === 2 && st[pool[0]].divKey === st[pool[1]].divKey)
+    return projSelectChain(pool, st, 'division');
+  return projSelectChain(pool, st, mode);
+}
+
+function projOrderClubs(list, st, mode) {
+  const groups = {};
+  for (const t of list) {
+    const p = projRecPct(st[t]);
+    const k = (p === null ? 0 : p).toFixed(6);
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(t);
+  }
+  const keys = Object.keys(groups).sort((a,b) => Number(b) - Number(a));
+  const out = [];
+  for (const k of keys) {
+    let g = groups[k];
+    if (g.length === 1) { out.push({ abbr:g[0], rule:null }); continue; }
+    let remaining = [...g];
+    while (remaining.length) {
+      if (remaining.length === 1) { out.push({ abbr:remaining[0], rule:null }); break; }
+      const r = projSelectTop(remaining, st, mode);
+      out.push({ abbr:r.winner, rule:r.rule, unresolved:r.unresolved });
+      remaining = remaining.filter(t => t !== r.winner);
+    }
+  }
+  return out;
+}
+
+function projComputeStandings(picks) {
+  const st = projBuildStats(allGames, picks);
+  const divisions = {};
+  NFL_TEAMS.forEach(t => {
+    const k = t.conf+' '+t.div;
+    if (!divisions[k]) divisions[k] = [];
+    divisions[k].push(t.abbr);
+  });
+  const divOrder = {};
+  for (const k of Object.keys(divisions)) divOrder[k] = projOrderClubs(divisions[k], st, 'division');
+  const seeds = {};
+  for (const conf of ['AFC','NFC']) {
+    const divKeys = Object.keys(divisions).filter(k => k.indexOf(conf) === 0);
+    const winners = divKeys.map(k => divOrder[k][0].abbr);
+    const rest = divKeys.reduce((acc,k) => acc.concat(divOrder[k].slice(1).map(x=>x.abbr)), []);
+    const rankedWinners = projOrderClubs(winners, st, 'wildcard');
+    const rankedRest = projOrderClubs(rest, st, 'wildcard');
+    seeds[conf] = rankedWinners.map((x,i) => ({...x, seed:i+1, divWinner:true}))
+      .concat(rankedRest.map((x,i) => ({...x, seed:i+5, divWinner:false})));
+  }
+  return { st, divOrder, seeds };
+}
+
+// ── Playoff bracket ──
+function projMatchWinner(m, picks) {
+  if (!m.a || !m.b) return null;
+  const p = picks[m.id];
+  if (p === m.a.abbr) return m.a;
+  if (p === m.b.abbr) return m.b;
+  return null;
+}
+
+function projBuildBracket(seeds, picks) {
+  const out = { AFC:null, NFC:null, sb:null, champ:null };
+  for (const conf of ['AFC','NFC']) {
+    const s = {};
+    seeds[conf].slice(0,7).forEach(x => s[x.seed] = x);
+    const wc = [
+      { id:conf+'-WC-27', a:s[2], b:s[7] },
+      { id:conf+'-WC-36', a:s[3], b:s[6] },
+      { id:conf+'-WC-45', a:s[4], b:s[5] }
+    ];
+    const wcW = wc.map(m => projMatchWinner(m, picks));
+    let dv;
+    if (wcW.every(Boolean)) {
+      // NFL reseeds: the 1 seed draws the lowest-ranked surviving seed.
+      const rem = [...wcW].sort((x,y) => x.seed - y.seed);
+      dv = [
+        { id:conf+'-DV-1', a:s[1], b:rem[rem.length-1] },
+        { id:conf+'-DV-2', a:rem[0], b:rem[1] }
+      ];
+    } else {
+      dv = [ { id:conf+'-DV-1', a:s[1], b:null }, { id:conf+'-DV-2', a:null, b:null } ];
+    }
+    const dvW = dv.map(m => projMatchWinner(m, picks));
+    const cc = { id:conf+'-CC', a:dvW[0], b:dvW[1] };
+    out[conf] = { wc, dv, cc, champ: projMatchWinner(cc, picks) };
+  }
+  const sb = { id:'SB', a:out.AFC.champ, b:out.NFC.champ };
+  out.sb = sb;
+  out.champ = projMatchWinner(sb, picks);
+  return out;
+}
+
+function projAllSlots(bracket) {
+  const ids = [];
+  for (const conf of ['AFC','NFC']) {
+    bracket[conf].wc.forEach(m => ids.push(m));
+    bracket[conf].dv.forEach(m => ids.push(m));
+    ids.push(bracket[conf].cc);
+  }
+  ids.push(bracket.sb);
+  return ids;
+}
+
+// ── Data loading ──
+async function loadProjectionData() {
+  const preSnap = await db.collection(COL.preseason).get();
+  projPreseasonDocs = {};
+  preSnap.forEach(d => { const x = d.data(); projPreseasonDocs[x.playerId || d.id] = x.picks || {}; });
+  // The bracket lives in its own collection. If the security rules don't cover it
+  // yet, the standings half of this tab should still work, so failure is not fatal.
+  projPlayoffDocs = {};
+  playoffsAvailable = true;
+  try {
+    const poSnap = await db.collection(COL.playoffs).get();
+    poSnap.forEach(d => { const x = d.data(); projPlayoffDocs[x.playerId || d.id] = x.picks || {}; });
+  } catch (e) {
+    playoffsAvailable = false;
+    console.warn('Playoff bracket unavailable (' + (e && e.code) + ') — add a Firestore rule for ' + COL.playoffs);
+  }
+  if (currentUser) playoffPicks = Object.assign({}, projPlayoffDocs[currentUser.id] || {});
+  projLoaded = true;
+}
+
+function projPicksFor(playerId) {
+  // Your own view uses live in-memory picks so the projection tracks unsaved edits.
+  if (currentUser && playerId === currentUser.id) return preseasonPicks;
+  return projPreseasonDocs[playerId] || {};
+}
+function projPlayoffFor(playerId) {
+  if (currentUser && playerId === currentUser.id) return playoffPicks;
+  return projPlayoffDocs[playerId] || {};
+}
+
+// ── Projections rendering ──
+async function renderProjections() {
+  const body = document.getElementById('proj-body');
+  if (!projLoaded) {
+    body.innerHTML = '<p class="proj-empty">Loading projections…</p>';
+    try { await loadProjectionData(); }
+    catch (e) { body.innerHTML = '<p class="proj-empty">Could not load picks.</p>'; return; }
+  }
+  if (!projPlayerId && currentUser) projPlayerId = currentUser.id;
+  renderProjToolbar();
+  renderProjBody();
+}
+
+function projEligiblePlayers() {
+  return allPlayers.filter(p =>
+    (currentUser && p.id === currentUser.id) ||
+    Object.keys(projPreseasonDocs[p.id] || {}).length > 0);
+}
+
+function renderProjToolbar() {
+  const el = document.getElementById('proj-toolbar');
+  const players = projEligiblePlayers();
+  if (players.length <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = `<label for="proj-player">Projection for</label>
+    <select id="proj-player" onchange="projSelectPlayer(this.value)">
+      ${players.map(p => `<option value="${p.id}"${p.id===projPlayerId?' selected':''}>${p.name}</option>`).join('')}
+    </select>`;
+}
+
+function projSelectPlayer(id) { projPlayerId = id; renderProjBody(); }
+
+function renderProjBody() {
+  const body = document.getElementById('proj-body');
+  if (!projPlayerId) { body.innerHTML = '<p class="proj-empty">No player selected.</p>'; return; }
+  const picks = projPicksFor(projPlayerId);
+  const picked = allGames.filter(g => picks[g.id] === g.away || picks[g.id] === g.home).length;
+  if (picked === 0) {
+    const who = (currentUser && projPlayerId === currentUser.id) ? 'You have' : 'This player has';
+    body.innerHTML = `<p class="proj-empty">${who} no preseason picks yet. Make picks on the Preseason tab and the projected season will appear here.</p>`;
+    return;
+  }
+  const { st, divOrder, seeds } = projComputeStandings(picks);
+  const bracket = projBuildBracket(seeds, projPlayoffFor(projPlayerId));
+  const isMine = !!(currentUser && projPlayerId === currentUser.id);
+  const editable = isMine && !isPreseasonLockedNow();
+
+  let html = '';
+  if (picked < allGames.length) {
+    html += `<div class="proj-warn">⚠ ${allGames.length - picked} of ${allGames.length} games still unpicked — records below only count games that have a pick, so standings and seeds will shift as you finish.</div>`;
+  }
+
+  html += `<div class="proj-section-title">Projected Playoff Seeds</div><div class="proj-grid">`;
+  html += renderSeedCard('AFC', seeds.AFC, st) + renderSeedCard('NFC', seeds.NFC, st);
+  html += `</div>`;
+
+  html += `<div class="proj-section-title">Projected Division Standings</div><div class="div-grid">`;
+  for (const conf of ['AFC','NFC'])
+    for (const d of ['East','North','South','West'])
+      html += renderDivCard(conf+' '+d, divOrder[conf+' '+d], st);
+  html += `</div>`;
+
+  html += `<div class="proj-section-title">Playoff Bracket</div>`;
+  if (!playoffsAvailable) {
+    html += `<div class="proj-warn">⚠ Bracket picks can't be saved yet — the Firestore rules don't cover the <code>${COL.playoffs}</code> collection. Seeds below are still accurate; add the rule to enable saving.</div>`;
+  }
+  html += renderBracket(bracket, projPlayoffFor(projPlayerId), editable);
+  if (isMine) {
+    html += `<div style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="savePlayoffPicks()" ${editable?'':'disabled'}>Save Playoff Bracket</button>
+      ${editable ? '' : '<span class="seed-tb" style="margin-left:10px;">Locked — unlock preseason picks to edit.</span>'}
+    </div>`;
+  }
+  body.innerHTML = html;
+}
+
+function renderSeedCard(conf, list, st) {
+  const shown = list.slice(0, 10);
+  const rows = shown.map((x, i) => {
+    const t = st[x.abbr];
+    const team = teamMap[x.abbr] || { name:x.abbr };
+    const inPlayoffs = x.seed <= 7;
+    const badge = x.seed === 1 ? '<span class="seed-badge bye">Bye</span>'
+                : x.divWinner ? '<span class="seed-badge">Div</span>' : '';
+    const tb = x.rule ? `<div class="seed-tb">${x.rule}</div>` : '';
+    return `<div class="seed-row ${inPlayoffs?'in':''} ${x.seed===7?'cut':''}">
+        <span class="seed-num">${inPlayoffs ? x.seed : i+1}</span>
+        <img class="seed-logo" src="${getTeamLogoUrl(x.abbr)}" alt="" loading="lazy">
+        <span class="seed-name">${team.name}${tb}</span>
+        <span class="seed-rec">${t.w}-${t.l}</span>
+        ${badge}
+      </div>` + (x.seed === 7 ? '<div class="cut-label">— playoff cut line —</div>' : '');
+  }).join('');
+  return `<div class="conf-card"><h4>${conf}</h4>${rows}</div>`;
+}
+
+function renderDivCard(key, order, st) {
+  const rows = order.map((x, i) => {
+    const t = st[x.abbr];
+    const team = teamMap[x.abbr] || { name:x.abbr };
+    const divRec = `${t.divW}-${t.divL}`;
+    return `<div class="div-row ${i===0?'winner':''}">
+      <img class="seed-logo" src="${getTeamLogoUrl(x.abbr)}" alt="" loading="lazy">
+      <span class="seed-name">${team.name}</span>
+      <span class="seed-rec">${t.w}-${t.l}</span>
+      <span class="div-sub">${divRec} div</span>
+    </div>`;
+  }).join('');
+  return `<div class="div-card"><h5>${key}</h5>${rows}</div>`;
+}
+
+function projRenderMatchup(m, picks, editable) {
+  if (!m.a || !m.b)
+    return `<div class="matchup pending"><div class="mu-tbd">Awaiting earlier round</div></div>`;
+  const win = projMatchWinner(m, picks);
+  const row = side => {
+    const team = teamMap[side.abbr] || { name:side.abbr };
+    const won = win && win.abbr === side.abbr;
+    const cls = 'mu-team' + (won ? ' won' : '') + (editable ? '' : ' disabled');
+    const click = editable ? ` onclick="bracketPick('${m.id}','${side.abbr}')"` : '';
+    return `<div class="${cls}"${click}>
+      <span class="mu-seed">${side.seed}</span>
+      <img src="${getTeamLogoUrl(side.abbr)}" alt="" loading="lazy">
+      <span class="mu-name">${team.name}</span>
+    </div>`;
+  };
+  return `<div class="matchup">${row(m.a)}${row(m.b)}</div>`;
+}
+
+function renderBracket(bracket, picks, editable) {
+  let html = '';
+  for (const conf of ['AFC','NFC']) {
+    const b = bracket[conf];
+    html += `<div class="bracket-conf">
+      <h4 style="font-family:'Oswald',sans-serif;letter-spacing:0.08em;font-size:0.9rem;margin-bottom:8px;color:var(--text-dim);">${conf}</h4>
+      <div class="bracket-rounds">
+        <div class="bracket-round"><h6>Wild Card</h6>
+          ${b.wc.map(m => projRenderMatchup(m, picks, editable)).join('')}
+          ${b.dv[0].a ? `<div class="matchup"><div class="mu-team disabled"><span class="mu-seed">1</span><img src="${getTeamLogoUrl(b.dv[0].a.abbr)}" alt="" loading="lazy"><span class="mu-name">${(teamMap[b.dv[0].a.abbr]||{name:b.dv[0].a.abbr}).name}</span></div><div class="mu-tbd">first-round bye</div></div>` : ''}
+        </div>
+        <div class="bracket-round"><h6>Divisional</h6>
+          ${b.dv.map(m => projRenderMatchup(m, picks, editable)).join('')}
+        </div>
+        <div class="bracket-round"><h6>${conf} Championship</h6>
+          ${projRenderMatchup(b.cc, picks, editable)}
+        </div>
+      </div>
+    </div>`;
+  }
+  html += `<div class="proj-section-title">Super Bowl</div>
+    <div style="max-width:280px;">${projRenderMatchup(bracket.sb, picks, editable)}</div>`;
+  if (bracket.champ) {
+    const team = teamMap[bracket.champ.abbr] || { name:bracket.champ.abbr };
+    html += `<div class="champ-card" style="max-width:280px;">
+      <div class="label">Projected Champion</div>
+      <img src="${getTeamLogoUrl(bracket.champ.abbr)}" alt="">
+      <div class="name">${team.name}</div>
+    </div>`;
+  }
+  return html;
+}
+
+function bracketPick(slotId, team) {
+  if (!currentUser || projPlayerId !== currentUser.id) return;
+  if (isPreseasonLockedNow()) { toast('Preseason picks are locked'); return; }
+  if (playoffPicks[slotId] === team) delete playoffPicks[slotId];
+  else playoffPicks[slotId] = team;
+  renderProjBody();
+}
+
+async function savePlayoffPicks() {
+  if (!currentUser) return;
+  if (isPreseasonLockedNow()) return toast('Preseason picks are locked!');
+  const { seeds } = projComputeStandings(projPicksFor(currentUser.id));
+  const bracket = projBuildBracket(seeds, playoffPicks);
+  // Drop any pick whose matchup no longer contains that team (seeding may have moved).
+  const valid = {};
+  projAllSlots(bracket).forEach(m => {
+    const p = playoffPicks[m.id];
+    if (m.a && m.b && (p === m.a.abbr || p === m.b.abbr)) valid[m.id] = p;
+  });
+  playoffPicks = valid;
+  try {
+    await db.collection(COL.playoffs).doc(currentUser.id).set({
+      playerId: currentUser.id,
+      playerName: currentUser.name,
+      picks: valid,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    playoffsAvailable = false;
+    renderProjBody();
+    return toast("Couldn't save bracket — Firestore rules need a " + COL.playoffs + ' entry');
+  }
+  playoffsAvailable = true;
+  projPlayoffDocs[currentUser.id] = Object.assign({}, valid);
+  toast('Playoff bracket saved!');
+  renderProjBody();
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1106,6 +1687,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
     if(tab.dataset.tab==='standings') renderStandings();
+    if(tab.dataset.tab==='projections') renderProjections();
     if(tab.dataset.tab==='admin') renderAdmin();
   });
 });
