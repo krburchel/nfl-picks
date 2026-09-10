@@ -450,10 +450,11 @@ h1,h2,h3,h4 { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-
         </div>
         <div class="form-row" style="margin-top:8px;">
           <div class="form-group">
-            <label>Weekly Picks Locked</label>
+            <label>Weekly Picks (current week)</label>
             <select id="admin-weekly-locked">
-              <option value="false">Open</option>
-              <option value="true">Locked</option>
+              <option value="auto">Auto — each game locks at its kickoff</option>
+              <option value="open">Force Open</option>
+              <option value="locked">Force Locked</option>
             </select>
           </div>
         </div>
@@ -689,7 +690,7 @@ function getWeekGames(week) {
 // ── State ──
 let currentUser = null;
 let isAdmin = false;
-let config = { currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, season:2026, requireApproval:false };
+let config = { currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, weeklyOverride:'auto', season:2026, requireApproval:false };
 let allGames = [];
 let allPlayers = [];
 let preseasonPicks = {};
@@ -771,11 +772,23 @@ function isPreseasonLockedNow() {
   return isPreseasonAutoLocked();
 }
 
+// Same shape as getPreseasonOverride: tolerates configs written before the
+// tri-state existed, which only carry the weeklyLocked boolean.
+function getWeeklyOverride() {
+  const o = config.weeklyOverride;
+  if (o === 'auto' || o === 'open' || o === 'locked') return o;
+  return config.weeklyLocked ? 'locked' : 'auto';
+}
+
 function isWeeklyGameLockedNow(game) {
-  // Master toggle locks all games in the current week
+  // Both overrides are scoped to the current week, matching the original toggle.
   const isCurrentWeek = game.week === config.currentWeek;
-  if (config.weeklyLocked && isCurrentWeek) return true;
-  // Per-game kickoff time
+  if (isCurrentWeek) {
+    const override = getWeeklyOverride();
+    if (override === 'open') return false;
+    if (override === 'locked') return true;
+  }
+  // Otherwise each game locks on its own kickoff.
   return isKickoffPassed(game);
 }
 
@@ -989,7 +1002,7 @@ async function createFirstPlayer() {
   if(!name) return;
   const ref = await db.collection(COL.players).add({ name, isAdmin:true });
   await db.collection(COL.config).doc('settings').set({
-    currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, season:2026, requireApproval:false
+    currentWeek:0, preseasonLocked:false, preseasonOverride:'auto', weeklyLocked:false, weeklyOverride:'auto', season:2026, requireApproval:false
   });
   await loadPlayers();
   loginAs(ref.id);
@@ -1060,7 +1073,7 @@ async function submitJoinRequest() {
         name, isAdmin: true, uid: user.uid, email: user.email || ''
       });
       await db.collection(COL.config).doc('settings').set({
-        currentWeek: 0, preseasonLocked: false, preseasonOverride: 'auto', weeklyLocked: false, season: 2026, requireApproval: false
+        currentWeek: 0, preseasonLocked: false, preseasonOverride: 'auto', weeklyLocked: false, weeklyOverride: 'auto', season: 2026, requireApproval: false
       });
       await loadConfig();
       await loadPlayers();
@@ -1859,12 +1872,16 @@ function renderWeekly() {
     .filter(ms => ms !== null && ms > Date.now())
     .sort((a,b) => a-b)[0];
 
-  if(config.weeklyLocked && isCurrentWeek) {
+  const weeklyOverride = getWeeklyOverride();
+  if (weeklyOverride === 'open' && isCurrentWeek) {
+    banner.innerHTML = `<div class="open-banner">🔓 Week ${selectedWeeklyWeek} force-opened by admin — every game is editable</div>`;
+  } else if(weeklyOverride === 'locked' && isCurrentWeek) {
     banner.innerHTML = `<div class="lock-banner">🔒 Week ${selectedWeeklyWeek} picks locked by admin</div>`;
   } else if (weekAllLocked) {
     banner.innerHTML = `<div class="lock-banner">🔒 All Week ${selectedWeeklyWeek} games have started</div>`;
   } else if (weekLockedCount > 0) {
-    banner.innerHTML = `<div class="lock-banner">🔒 ${weekLockedCount} of ${weekGamesForBanner.length} Week ${selectedWeeklyWeek} games locked${nextGameMs?` · next kickoff ${formatKickoff(nextGameMs)}`:''}</div>`;
+    const open = weekGamesForBanner.length - weekLockedCount;
+    banner.innerHTML = `<div class="proj-warn">🔒 ${weekLockedCount} of ${weekGamesForBanner.length} Week ${selectedWeeklyWeek} games already kicked off — ${open} still open to pick${nextGameMs?` · next kickoff ${formatKickoff(nextGameMs)}`:''}</div>`;
   } else if (nextGameMs) {
     banner.innerHTML = `<div class="open-banner">✏️ Pick Week ${selectedWeeklyWeek} — first kickoff ${formatKickoff(nextGameMs)}</div>`;
   } else {
@@ -2232,7 +2249,7 @@ function populateAdminDropdowns() {
   });
   document.getElementById('admin-current-week').value = config.currentWeek;
   document.getElementById('admin-preseason-locked').value = getPreseasonOverride();
-  document.getElementById('admin-weekly-locked').value = String(config.weeklyLocked);
+  document.getElementById('admin-weekly-locked').value = getWeeklyOverride();
   const reqApprovalEl = document.getElementById('admin-require-approval');
   if (reqApprovalEl) reqApprovalEl.value = String(!!config.requireApproval);
 
@@ -2549,7 +2566,8 @@ async function saveSettings() {
   config.preseasonOverride = document.getElementById('admin-preseason-locked').value;
   // Kept in sync so any older client still reading the boolean behaves sanely.
   config.preseasonLocked = config.preseasonOverride === 'locked';
-  config.weeklyLocked = document.getElementById('admin-weekly-locked').value === 'true';
+  config.weeklyOverride = document.getElementById('admin-weekly-locked').value;
+  config.weeklyLocked = config.weeklyOverride === 'locked';
   await db.collection(COL.config).doc('settings').set(config);
   renderAll();
   toast('Settings saved!');
